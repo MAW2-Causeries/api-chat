@@ -16,10 +16,12 @@ import (
 
 func TestNewMessageHandlerReturnNewMessage(t *testing.T) {
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/messages", strings.NewReader("author_id=DD79A816-D227-4AEC-B413-6AF520B0B157&channel_id=DD04A392-A4D6-45F5-86B5-E070E7588097&content=hello+world"))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages", strings.NewReader("author_id=DD79A816-D227-4AEC-B413-6AF520B0B157&content=hello+world"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
+	c.SetParamNames("channelID")
+	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097")
 
 	monkey.Patch(models.NewMessage, func(authorID, channelID, content string) *models.Message {
 		return &models.Message{
@@ -46,10 +48,12 @@ func TestNewMessageHandlerReturnNewMessage(t *testing.T) {
 
 func TestNewMessageHandlerMissingFields(t *testing.T) {
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/messages", strings.NewReader("author_id=&channel_id=DD04A392-A4D6-45F5-86B5-E070E7588097&content=hello+world"))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages", strings.NewReader("author_id=&content=hello+world"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
+	c.SetParamNames("channelID")
+	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097")
 	
 	h := &handlers.Handler{}
 	
@@ -57,6 +61,58 @@ func TestNewMessageHandlerMissingFields(t *testing.T) {
 	if he, ok := err.(*echo.HTTPError); ok {
 		assert.Equal(t, http.StatusBadRequest, he.Code)
 		assert.Equal(t, "Missing required fields", he.Message)
+	} else {
+		t.Fatalf("expected HTTPError, got %v", err)
+	}
+}
+
+func TestGetMessagesHandlerReturnMessages(t *testing.T) {
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("channelID")
+	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097")
+	
+	monkey.Patch(models.GetMessagesByChannelID, func(channelID string, limit int) ([]*models.Message, error) {
+		return []*models.Message{
+			{
+				ID:       	"bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
+				AuthorID:  	"bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
+				ChannelID: 	"f63f7c42-c567-4b17-bd3a-93c1eb510ed9",
+				Content:   	"feudbfuidsfhdosr",
+			},
+		}, nil
+	})
+	
+	h := &handlers.Handler{}
+	if assert.NoError(t, h.GetMessagesHandler(c)) {
+		assert.Equal(t, http.StatusOK, rec.Code)
+		
+		var resp []map[string]any
+		if assert.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp)) {
+			assert.Len(t, resp, 1)
+			assert.Equal(t, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", resp[0]["author_id"])
+			assert.Equal(t, "f63f7c42-c567-4b17-bd3a-93c1eb510ed9", resp[0]["channel_id"])
+			assert.Equal(t, "feudbfuidsfhdosr", resp[0]["content"])
+		}
+	}
+}
+
+func TestGetMessagesHandlerMissingChannelID(t *testing.T) {
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/channels//messages", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("channelID")
+	c.SetParamValues("")
+	
+	h := &handlers.Handler{}
+	
+	err := h.GetMessagesHandler(c)
+	if he, ok := err.(*echo.HTTPError); ok {
+		assert.Equal(t, http.StatusBadRequest, he.Code)
+		assert.Equal(t, "Missing channel ID", he.Message)
 	} else {
 		t.Fatalf("expected HTTPError, got %v", err)
 	}

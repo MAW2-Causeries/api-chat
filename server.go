@@ -23,7 +23,8 @@ func main() {
 
 	h := &handlers.Handler{}
 
-	e.POST(_prefix + "/messages", h.NewMessageHandler)
+	e.POST(_prefix + "/channels/:channelID/messages", h.NewMessageHandler)
+	e.GET(_prefix + "/channels/:channelID/messages", h.GetMessagesHandler)
 
 	e.Start(":1323")
 }
