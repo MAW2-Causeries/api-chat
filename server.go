@@ -1,9 +1,11 @@
 package main
 
 import (
+	"MessagesService/databases"
 	"MessagesService/handlers"
 	"net/http"
 
+	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 )
 
@@ -12,12 +14,16 @@ const _APIVersion = "v1"
 const _prefix = "/api/" + _APIVersion
 
 func main() {
+	godotenv.Load()
+
+	databases.InitDatabases()
+
 	e := echo.New()
 	e.GET(_prefix, _RootHandler)
 
 	h := &handlers.Handler{}
 
-	e.GET(_prefix + "/messages", h.MessageHandler)
+	e.POST(_prefix + "/messages", h.NewMessageHandler)
 
 	e.Start(":1323")
 }
