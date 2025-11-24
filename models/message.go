@@ -2,17 +2,18 @@ package models
 
 import (
 	"MessagesService/databases"
+	"time"
 )
 
 // Message represents a message in the system
 type Message struct {
-	ID      	  	string
-	Content 	  	string
-	AuthorID 		string
-	ChannelID 		string
-	CreatedAt 		string
-	UpdatedAt 		string
-	DeletedAt 		string
+	ID        string
+	Content   string
+	AuthorID  string
+	ChannelID string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time
 }
 
 // ToMap converts a Message to a map[string]any
@@ -22,16 +23,22 @@ func (m *Message) ToMap() map[string]any {
 		"author_id":  m.AuthorID,
 		"channel_id": m.ChannelID,
 		"content":    m.Content,
-		"created_at": m.CreatedAt,
-		"updated_at": m.UpdatedAt,
-		"deleted_at": m.DeletedAt,
+		"created_at": m.CreatedAt.Format(time.RFC3339),
+		"updated_at": m.UpdatedAt.Format(time.RFC3339),
+		"deleted_at": func() any {
+			if m.DeletedAt == nil {
+				return nil
+			}
+			return m.DeletedAt.Format(time.RFC3339)
+		}(),
 	}
 }
 
 // NewMessage creates a new Message and saves it to the database
 func NewMessage(authorID, channelID, content string) *Message {
-	var id, createdAt, updatedAt, deletedAt string
-
+	var id string
+	var createdAt, updatedAt time.Time
+	var deletedAt *time.Time
 
 	if err := databases.Session.Query(`
 		INSERT INTO messages (id, content, author_id, channel_id, created_at, updated_at, deleted_at)
@@ -41,20 +48,56 @@ func NewMessage(authorID, channelID, content string) *Message {
 		return nil
 	}
 
+	// select timestamps as well so we can scan into time.Time variables
 	_ = databases.Session.Query(`
-		SELECT id FROM messages
-		WHERE content = ? AND author_id = ? AND channel_id = ? AND created_at = toTimestamp(now())
-		LIMIT 1`,
+		SELECT id, created_at, updated_at, deleted_at FROM messages
+		WHERE content = ? AND author_id = ? AND channel_id = ?
+		LIMIT 1 ALLOW FILTERING`,
 		content, authorID, channelID,
 	).Scan(&id, &createdAt, &updatedAt, &deletedAt)
 
 	return &Message{
-		ID:       	id,
-		Content:   	content,
-		AuthorID: 	authorID,
-		ChannelID:	channelID,
-		CreatedAt:	createdAt,
-		UpdatedAt:	updatedAt,
-		DeletedAt:	deletedAt,
+		ID:        id,
+		Content:   content,
+		AuthorID:  authorID,
+		ChannelID: channelID,
+		CreatedAt: createdAt,
+		UpdatedAt: updatedAt,
+		DeletedAt: deletedAt,
 	}
+}
+
+func GetMessagesByChannelID(channelID string, limit int) ([]*Message, error) {
+	var messages []*Message
+
+	iter := databases.Session.Query(`
+		SELECT id, content, author_id, channel_id, created_at, updated_at, deleted_at
+		FROM messages
+		WHERE channel_id = ?
+		LIMIT ? ALLOW FILTERING`,
+		channelID, limit,
+	).Iter()
+
+	var id, content, authorID, chID string
+	var createdAt, updatedAt time.Time
+	var deletedAt *time.Time
+
+	for iter.Scan(&id, &content, &authorID, &chID, &createdAt, &updatedAt, &deletedAt) {
+		message := &Message{
+			ID:        id,
+			Content:   content,
+			AuthorID:  authorID,
+			ChannelID: chID,
+			CreatedAt: createdAt,
+			UpdatedAt: updatedAt,
+			DeletedAt: deletedAt,
+		}
+		messages = append(messages, message)
+	}
+
+	if err := iter.Close(); err != nil {
+		return nil, err
+	}
+
+	return messages, nil
 }
