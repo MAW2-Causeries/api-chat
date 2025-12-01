@@ -11,7 +11,18 @@ import (
 // NewMessageHandler handles the /api/v1/message route for Post requests
 func (h *Handler) NewMessageHandler(c echo.Context) (err error) {
 	channelID := c.Param("channelID")
-	content := c.FormValue("content")
+	content := ""
+	if c.Request().Header.Get("Content-Type") == "application/json" {
+		body := struct {
+			Content string `json:"content"`
+		}{}
+		if err := c.Bind(&body); err != nil {
+			return echo.NewHTTPError(400, "Invalid JSON body")
+		}
+		content = body.Content
+	} else {
+		content = c.FormValue("content")
+	}
 	authorID := ""
 
 	if channelID == "" || content == "" {
