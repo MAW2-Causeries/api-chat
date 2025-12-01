@@ -12,6 +12,7 @@ require (
 )
 
 require (
+	bou.ke/monkey v1.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/klauspost/compress v1.18.1 // indirect
