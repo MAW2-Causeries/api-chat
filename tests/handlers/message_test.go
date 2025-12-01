@@ -157,3 +157,39 @@ func TestGetMessageUnauthorized(t *testing.T) {
 		t.Fatalf("expected HTTPError, got %v", err)
 	}
 }
+
+func TestNewMessageWithJsonBody(t *testing.T) {
+	e := echo.New()
+	jsonBody := `{"content":"Hello, JSON!"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages", strings.NewReader(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("channelID")
+	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097")
+
+	monkey.Patch(models.NewMessage, func(authorID, channelID, content string) *models.Message {
+		return &models.Message{
+			ID:       	"bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
+			AuthorID:  	"bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
+			ChannelID: 	"f63f7c42-c567-4b17-bd3a-93c1eb510ed9",
+			Content:   	"Hello, JSON!",
+		}
+	})
+	monkey.Patch(utils.VerifyBearerToken, func(Authorization string) (string, error) {
+		return "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", nil
+	})
+
+	h := &handlers.Handler{}
+
+	if assert.NoError(t, h.NewMessageHandler(c)) {
+		assert.Equal(t, http.StatusCreated, rec.Code)
+
+		var resp map[string]any
+		if assert.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp)) {
+			assert.Equal(t, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", resp["author_id"])
+			assert.Equal(t, "f63f7c42-c567-4b17-bd3a-93c1eb510ed9", resp["channel_id"])
+			assert.Equal(t, "Hello, JSON!", resp["content"])
+		}
+	}
+}
