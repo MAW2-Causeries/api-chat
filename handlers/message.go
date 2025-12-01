@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"MessagesService/models"
+	"MessagesService/utils"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
@@ -11,10 +12,16 @@ import (
 func (h *Handler) NewMessageHandler(c echo.Context) (err error) {
 	channelID := c.Param("channelID")
 	content := c.FormValue("content")
-	authorID := c.FormValue("author_id")
+	authorID := ""
 
-	if authorID == "" || channelID == "" || content == "" {
+	if channelID == "" || content == "" {
 		return echo.NewHTTPError(400, "Missing required fields")
+	}
+
+	authHeader := c.Request().Header.Get("Authorization")
+	authorID, err = utils.VerifyBearerToken(authHeader)
+	if err != nil {
+		return echo.NewHTTPError(401, err.Error())
 	}
 
 	message := models.NewMessage(
@@ -34,6 +41,12 @@ func (h *Handler) NewMessageHandler(c echo.Context) (err error) {
 func (h *Handler) GetMessagesHandler(c echo.Context) (err error) {
 	channelID := c.Param("channelID")
 	limit := c.QueryParam("limit")
+
+	authHeader := c.Request().Header.Get("Authorization")
+	_, err = utils.VerifyBearerToken(authHeader)
+	if err != nil {
+		return echo.NewHTTPError(401, err.Error())
+	}
 
 	if limit == "" {
 		limit = "50"

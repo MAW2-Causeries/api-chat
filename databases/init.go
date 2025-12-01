@@ -1,7 +1,7 @@
 package databases
 
 import (
-	"os"
+	"MessagesService/utils"
 
 	"github.com/gocql/gocql"
 )
@@ -11,17 +11,10 @@ var Session *gocql.Session
 
 // InitDatabases initializes the database connections
 func InitDatabases() error {
-		getEnv := func(key, def string) string {
-		if v, ok := os.LookupEnv(key); ok && v != "" {
-			return v
-		}
-		return def
-	}
-
-	host := getEnv("SCYLLA_HOST", "localhost")
-	username := getEnv("SCYLLA_USER", "scylla")
-	password := getEnv("SCYLLA_PASS", "your-awesome-password")
-	keyspace := getEnv("SCYLLA_KEYSPACE", "messages_service")
+	host := utils.GetEnv("SCYLLA_HOST", "localhost")
+	username := utils.GetEnv("SCYLLA_USER", "scylla")
+	password := utils.GetEnv("SCYLLA_PASS", "your-awesome-password")
+	keyspace := utils.GetEnv("SCYLLA_KEYSPACE", "messages_service")
 
 	cluster := gocql.NewCluster(host)
 	cluster.Authenticator = gocql.PasswordAuthenticator{
