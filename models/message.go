@@ -67,6 +67,7 @@ func NewMessage(authorID, channelID, content string) *Message {
 	}
 }
 
+// GetMessagesByChannelID retrieves messages for a given channel ID with a limit
 func GetMessagesByChannelID(channelID string, limit int) ([]*Message, error) {
 	var messages []*Message
 

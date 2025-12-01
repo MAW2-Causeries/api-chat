@@ -3,7 +3,6 @@ package main
 import (
 	"MessagesService/databases"
 	"MessagesService/handlers"
-	"net/http"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
@@ -19,7 +18,6 @@ func main() {
 	databases.InitDatabases()
 
 	e := echo.New()
-	e.GET(_prefix, _RootHandler)
 
 	h := &handlers.Handler{}
 
@@ -27,8 +25,4 @@ func main() {
 	e.GET(_prefix + "/channels/:channelID/messages", h.GetMessagesHandler)
 
 	e.Start(":1323")
-}
-
-func _RootHandler(c echo.Context) error {
-	return c.String(http.StatusOK, "Hello, World!")
 }
