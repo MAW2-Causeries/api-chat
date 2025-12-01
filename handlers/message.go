@@ -30,7 +30,8 @@ func (h *Handler) NewMessageHandler(c echo.Context) (err error) {
 	return c.JSON(201, message.ToMap())
 }
 
-func (m *Handler) GetMessagesHandler(c echo.Context) (err error) {
+// GetMessagesHandler handles the /api/v1/message route for Get requests
+func (h *Handler) GetMessagesHandler(c echo.Context) (err error) {
 	channelID := c.Param("channelID")
 	limit := c.QueryParam("limit")
 
