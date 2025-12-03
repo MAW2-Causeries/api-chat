@@ -8,7 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// NewMessageHandler handles the /api/v1/message route for Post requests
+// NewMessageHandler handles route for Post requests
 func (h *Handler) NewMessageHandler(c echo.Context) (err error) {
 	channelID := c.Param("channelID")
 	content := ""
@@ -52,6 +52,7 @@ func (h *Handler) NewMessageHandler(c echo.Context) (err error) {
 func (h *Handler) GetMessagesHandler(c echo.Context) (err error) {
 	channelID := c.Param("channelID")
 	limit := c.QueryParam("limit")
+	page := c.QueryParam("page")
 
 	authHeader := c.Request().Header.Get("Authorization")
 	_, err = utils.VerifyBearerToken(authHeader)
@@ -66,18 +67,26 @@ func (h *Handler) GetMessagesHandler(c echo.Context) (err error) {
 	if err != nil || limitInt < 1 || limitInt > 100 {
 		return echo.NewHTTPError(400, "Invalid limit; must be an integer between 1 and 100")
 	}
+
+	if page == "" {
+		page = "1"
+	}
+	pageInt, err := strconv.Atoi(page)
+	if err != nil || pageInt < 1 {
+		return echo.NewHTTPError(400, "Invalid page; must be an integer greater than 0")
+	}
 	
 	if channelID == "" {
 		return echo.NewHTTPError(400, "Missing channel ID")
 	}
 
-	messages, err := models.GetMessagesByChannelID(channelID, limitInt)
+	messages, err := models.GetMessagesByChannelID(channelID, limitInt, pageInt)
 	if err != nil {
 		println(err.Error())
 		return echo.NewHTTPError(500, "Failed to retrieve messages")
 	}
 
-	messageMaps := make([]map[string]interface{}, len(messages))
+	messageMaps := make([]map[string]any, len(messages))
 	for i, message := range messages {
 		messageMaps[i] = message.ToMap()
 	}

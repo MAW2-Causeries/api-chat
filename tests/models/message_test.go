@@ -60,6 +60,7 @@ func TestNewMessage(t *testing.T) {
 func TestGetMessagesByChannelId(t *testing.T) {
 	var channelID = "27731CCA-ADB5-42DB-AA8C-500994FC4098"
 	var limit = 50
+	var page = 1
 
 	monkey.Patch((*gocql.Session).Query, func(_ *gocql.Session, _ string, _ ...any) *gocql.Query {
 		return &gocql.Query{}
@@ -98,7 +99,7 @@ func TestGetMessagesByChannelId(t *testing.T) {
 		return false // end of iteration after one record
 	})
 
-	messages, err := models.GetMessagesByChannelID(channelID, limit)
+	messages, err := models.GetMessagesByChannelID(channelID, limit, page)
 
 	assert.Nil(t, err)
 	assert.Len(t, messages, 1)
