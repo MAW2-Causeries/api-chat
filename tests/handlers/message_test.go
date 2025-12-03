@@ -87,7 +87,7 @@ func TestGetMessagesHandlerReturnMessages(t *testing.T) {
 		return "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", nil
 	})
 	
-	monkey.Patch(models.GetMessagesByChannelID, func(channelID string, limit int) ([]*models.Message, error) {
+	monkey.Patch(models.GetMessagesByChannelID, func(channelID string, limit, page int) ([]*models.Message, error) {
 		return []*models.Message{
 			{
 				ID:       	"bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",

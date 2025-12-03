@@ -67,23 +67,29 @@ func NewMessage(authorID, channelID, content string) *Message {
 	}
 }
 
-// GetMessagesByChannelID retrieves messages for a given channel ID with a limit
-func GetMessagesByChannelID(channelID string, limit int) ([]*Message, error) {
+// GetMessagesByChannelID retrieves messages for a given channel ID
+func GetMessagesByChannelID(channelID string, pageSize, pageNumber int) ([]*Message, error) {
 	var messages []*Message
 
-	iter := databases.Session.Query(`
+	q := databases.Session.Query(`
 		SELECT id, content, author_id, channel_id, created_at, updated_at, deleted_at
 		FROM messages
-		WHERE channel_id = ?
-		LIMIT ? ALLOW FILTERING`,
-		channelID, limit,
-	).Iter()
+		WHERE channel_id = ? LIMIT ? ALLOW FILTERING`,
+		channelID, pageSize * pageNumber,
+	)
+
+	iter := q.Iter()
 
 	var id, content, authorID, chID string
 	var createdAt, updatedAt time.Time
 	var deletedAt *time.Time
+	var currentIndex int
 
 	for iter.Scan(&id, &content, &authorID, &chID, &createdAt, &updatedAt, &deletedAt) {
+		currentIndex++
+		if currentIndex <= pageSize*(pageNumber-1) {
+			continue
+		}
 		message := &Message{
 			ID:        id,
 			Content:   content,
