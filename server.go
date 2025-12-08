@@ -15,7 +15,10 @@ const _prefix = "/api/" + _APIVersion
 func main() {
 	godotenv.Load()
 
-	databases.InitDatabases()
+	err := databases.InitDatabases()
+	if err != nil {
+		panic(err)
+	}
 
 	e := echo.New()
 
