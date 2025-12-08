@@ -48,12 +48,12 @@ func NewMessage(authorID, channelID, content string) *Message {
 		return nil
 	}
 
-	// select timestamps as well so we can scan into time.Time variables
+	// Retrieve the newly created message's details
 	_ = databases.Session.Query(`
 		SELECT id, created_at, updated_at, deleted_at FROM messages
-		WHERE content = ? AND author_id = ? AND channel_id = ?
-		LIMIT 1 ALLOW FILTERING`,
-		content, authorID, channelID,
+		WHERE channel_id = ?
+		LIMIT 1`,
+		channelID,
 	).Scan(&id, &createdAt, &updatedAt, &deletedAt)
 
 	return &Message{
@@ -74,7 +74,7 @@ func GetMessagesByChannelID(channelID string, pageSize, pageNumber int) ([]*Mess
 	q := databases.Session.Query(`
 		SELECT id, content, author_id, channel_id, created_at, updated_at, deleted_at
 		FROM messages
-		WHERE channel_id = ? LIMIT ? ALLOW FILTERING`,
+		WHERE channel_id = ? LIMIT ?`,
 		channelID, pageSize * pageNumber,
 	)
 
