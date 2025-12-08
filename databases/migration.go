@@ -4,14 +4,15 @@ var migrations = map[string]map[string]string{
 	"2025-11-17-11-54-24_create_messages_table": {
 		"up": `
 			CREATE TABLE IF NOT EXISTS messages (
-				id uuid PRIMARY KEY,
+				id uuid,
 				content text,
 				author_id uuid,
 				channel_id uuid,
 				created_at timestamp,
 				updated_at timestamp,
-				deleted_at timestamp
-			);
+				deleted_at timestamp,
+				PRIMARY KEY (channel_id, id)
+			) WITH CLUSTERING ORDER BY (id DESC);
 		`,
 		"down": `
 			DROP TABLE IF EXISTS messages;
