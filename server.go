@@ -26,6 +26,7 @@ func main() {
 
 	e.POST(_prefix + "/channels/:channelID/messages", h.NewMessageHandler)
 	e.GET(_prefix + "/channels/:channelID/messages", h.GetMessagesHandler)
+	e.GET(_prefix, h.Websocket)
 
 	e.Start(":1323")
 }

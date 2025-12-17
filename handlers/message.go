@@ -5,8 +5,51 @@ import (
 	"MessagesService/utils"
 	"strconv"
 
+	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 )
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
+var connected_user = make(map[string]*websocket.Conn)
+
+func (h *Handler) Websocket(c echo.Context) (err error) {
+	authHeader := c.Request().Header.Get("Authorization")
+	authorID, err := utils.VerifyBearerToken(authHeader)
+	if err != nil {
+		return echo.NewHTTPError(401, err.Error())
+	}
+
+	ws, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
+	if err != nil {
+		return err
+	}
+	defer ws.Close()
+
+	connected_user[authorID] = ws
+
+	for {
+		_, _, err := ws.ReadMessage()
+		if err != nil {
+			break
+		}
+	}
+
+	connected_user[authorID] = nil
+	return nil
+}
+
+func (h *Handler) notify(channelID string, message *models.Message) {
+	for _, conn := range connected_user {
+		err := conn.WriteJSON(message.ToMap())
+		if err != nil {
+			continue
+		}
+	}
+}
 
 // NewMessageHandler handles route for Post requests
 func (h *Handler) NewMessageHandler(c echo.Context) (err error) {
@@ -44,6 +87,8 @@ func (h *Handler) NewMessageHandler(c echo.Context) (err error) {
 	if message == nil {
 		return echo.NewHTTPError(500, "Failed to create message")
 	}
+
+	go h.notify(channelID, message)
 
 	return c.JSON(201, message.ToMap())
 }
