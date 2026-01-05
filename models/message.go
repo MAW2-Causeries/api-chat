@@ -67,7 +67,8 @@ func NewMessage(authorID, channelID, content string) *Message {
 	}
 }
 
-func GetMessageByChannelIdAndMessageID(channelID string, messageID string) *Message {
+// GetMessageByChannelIDAndMessageID retrieves a message by channel ID and message ID
+func GetMessageByChannelIDAndMessageID(channelID string, messageID string) *Message {
 	q := databases.Session.Query(`
 		SELECT id, content, author_id, channel_id, created_at, updated_at, deleted_at
 		FROM messages
