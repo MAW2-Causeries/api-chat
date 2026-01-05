@@ -52,7 +52,7 @@ jobs:
       - name: lint code
         run: |
           go install golang.org/x/lint/golint@latest
-          golint ./... --set_exit_status
+          golint --set_exit_status ./...
 
   verify-modules:
     runs-on: ubuntu-latest
