@@ -206,7 +206,7 @@ func TestGetMessageHandlerReturnMessage(t *testing.T) {
 		return "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", nil
 	})
 	
-	monkey.Patch(models.GetMessageByChannelIdAndMessageID, func(channelID string, messageID string) *models.Message {
+	monkey.Patch(models.GetMessageByChannelIDAndMessageID, func(channelID string, messageID string) *models.Message {
 		return &models.Message{
 			ID:       	"bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
 			AuthorID:  	"bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
@@ -240,7 +240,7 @@ func TestGetMessageHandlerMessageNotFound(t *testing.T) {
 		return "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", nil
 	})
 	
-	monkey.Patch(models.GetMessageByChannelIdAndMessageID, func(channelID string, messageID string) *models.Message {
+	monkey.Patch(models.GetMessageByChannelIDAndMessageID, func(channelID string, messageID string) *models.Message {
 		return nil
 	})
 	

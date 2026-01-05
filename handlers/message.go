@@ -14,8 +14,9 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-var connected_user = make(map[string]*websocket.Conn)
+var connectedUser = make(map[string]*websocket.Conn)
 
+// Websocket handles websocket connections for real-time message updates
 func (h *Handler) Websocket(c echo.Context) (err error) {
 	authHeader := c.Request().Header.Get("Authorization")
 	authorID, err := utils.VerifyBearerToken(authHeader)
@@ -29,7 +30,7 @@ func (h *Handler) Websocket(c echo.Context) (err error) {
 	}
 	defer ws.Close()
 
-	connected_user[authorID] = ws
+	connectedUser[authorID] = ws
 
 	for {
 		_, _, err := ws.ReadMessage()
@@ -38,12 +39,12 @@ func (h *Handler) Websocket(c echo.Context) (err error) {
 		}
 	}
 
-	connected_user[authorID] = nil
+	connectedUser[authorID] = nil
 	return nil
 }
 
 func (h *Handler) notify(channelID string, message *models.Message) {
-	for _, conn := range connected_user {
+	for _, conn := range connectedUser {
 		err := conn.WriteJSON(message.ToMap())
 		if err != nil {
 			continue
@@ -139,6 +140,7 @@ func (h *Handler) GetMessagesHandler(c echo.Context) (err error) {
 	return c.JSON(200, messageMaps)
 }
 
+// GetMessageHandler handles the /api/v1/message/:messageID route for Get requests
 func (h *Handler) GetMessageHandler(c echo.Context) (err error) {
 	channelID := c.Param("channelID")
 	messageID := c.Param("messageID")
@@ -152,7 +154,7 @@ func (h *Handler) GetMessageHandler(c echo.Context) (err error) {
 	if channelID == "" || messageID == "" {
 		return echo.NewHTTPError(400, "Missing required fields")
 	}
-	message := models.GetMessageByChannelIdAndMessageID(channelID, messageID)
+	message := models.GetMessageByChannelIDAndMessageID(channelID, messageID)
 	if message == nil {
 		return echo.NewHTTPError(404, "Message not found")
 	}

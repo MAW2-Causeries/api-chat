@@ -112,7 +112,7 @@ func TestGetMessagesByChannelId(t *testing.T) {
 	assert.NotEmpty(t, messages[0].UpdatedAt)
 }
 
-func TestGetMessageByChannelIdAndMessageID(t *testing.T) {
+func TestGetMessageByChannelIDAndMessageID(t *testing.T) {
 	var channelID = "27731CCA-ADB5-42DB-AA8C-500994FC4098"
 	var messageID = "1"
 
@@ -159,7 +159,7 @@ func TestGetMessageByChannelIdAndMessageID(t *testing.T) {
 		return nil
 	})
 	
-	message := models.GetMessageByChannelIdAndMessageID(channelID, messageID)
+	message := models.GetMessageByChannelIDAndMessageID(channelID, messageID)
 
 	assert.Equal(t, message.ID, messageID)
 	assert.Equal(t, message.Content, "Hello, World!")
