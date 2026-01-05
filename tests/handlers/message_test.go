@@ -193,3 +193,64 @@ func TestNewMessageWithJsonBody(t *testing.T) {
 		}
 	}
 }
+
+func TestGetMessageHandlerReturnMessage(t *testing.T) {
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages/BB6A2B8A-954A-4AC2-A7B9-4B5A100AFB70", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("channelID", "messageID")
+	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097", "BB6A2B8A-954A-4AC2-A7B9-4B5A100AFB70")
+
+	monkey.Patch(utils.VerifyBearerToken, func(Authorization string) (string, error) {
+		return "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", nil
+	})
+	
+	monkey.Patch(models.GetMessageByChannelIdAndMessageID, func(channelID string, messageID string) *models.Message {
+		return &models.Message{
+			ID:       	"bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
+			AuthorID:  	"bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
+			ChannelID: 	"f63f7c42-c567-4b17-bd3a-93c1eb510ed9",
+			Content:   	"feudbfuidsfhdosr",
+		}
+	})
+	
+	h := &handlers.Handler{}
+	if assert.NoError(t, h.GetMessageHandler(c)) {
+		assert.Equal(t, http.StatusOK, rec.Code)
+		
+		var resp map[string]any
+		if assert.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp)) {
+			assert.Equal(t, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", resp["author_id"])
+			assert.Equal(t, "f63f7c42-c567-4b17-bd3a-93c1eb510ed9", resp["channel_id"])
+			assert.Equal(t, "feudbfuidsfhdosr", resp["content"])
+		}
+	}
+}
+
+func TestGetMessageHandlerMessageNotFound(t *testing.T) {
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages/BB6A2B8A-954A-4AC2-A7B9-4B5A100AFB70", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("channelID", "messageID")
+	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097", "BB6A2B8A-954A-4AC2-A7B9-4B5A100AFB70")
+
+	monkey.Patch(utils.VerifyBearerToken, func(Authorization string) (string, error) {
+		return "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", nil
+	})
+	
+	monkey.Patch(models.GetMessageByChannelIdAndMessageID, func(channelID string, messageID string) *models.Message {
+		return nil
+	})
+	
+	h := &handlers.Handler{}
+	
+	err := h.GetMessageHandler(c)
+	if he, ok := err.(*echo.HTTPError); ok {
+		assert.Equal(t, http.StatusNotFound, he.Code)
+		assert.Equal(t, "Message not found", he.Message)
+	} else {
+		t.Fatalf("expected HTTPError, got %v", err)
+	}
+}

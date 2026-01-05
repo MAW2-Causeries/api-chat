@@ -67,6 +67,34 @@ func NewMessage(authorID, channelID, content string) *Message {
 	}
 }
 
+func GetMessageByChannelIdAndMessageID(channelID string, messageID string) *Message {
+	q := databases.Session.Query(`
+		SELECT id, content, author_id, channel_id, created_at, updated_at, deleted_at
+		FROM messages
+		WHERE channel_id = ? AND id = ? LIMIT 1`,
+		channelID,
+		messageID,
+	)
+
+	var id, content, authorID, chID string
+	var createdAt, updatedAt time.Time
+	var deletedAt *time.Time
+
+	if err := q.Scan(&id, &content, &authorID, &chID, &createdAt, &updatedAt, &deletedAt); err != nil {
+		return nil
+	}
+	
+	return &Message{
+		ID:        id,
+		Content:   content,
+		AuthorID:  authorID,
+		ChannelID: chID,
+		CreatedAt: createdAt,
+		UpdatedAt: updatedAt,
+		DeletedAt: deletedAt,
+	}
+}
+
 // GetMessagesByChannelID retrieves messages for a given channel ID
 func GetMessagesByChannelID(channelID string, pageSize, pageNumber int) ([]*Message, error) {
 	var messages []*Message

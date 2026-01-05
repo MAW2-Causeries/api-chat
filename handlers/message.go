@@ -138,3 +138,24 @@ func (h *Handler) GetMessagesHandler(c echo.Context) (err error) {
 
 	return c.JSON(200, messageMaps)
 }
+
+func (h *Handler) GetMessageHandler(c echo.Context) (err error) {
+	channelID := c.Param("channelID")
+	messageID := c.Param("messageID")
+
+	authHeader := c.Request().Header.Get("Authorization")
+	_, err = utils.VerifyBearerToken(authHeader)
+	if err != nil {
+		return echo.NewHTTPError(401, err.Error())
+	}
+	
+	if channelID == "" || messageID == "" {
+		return echo.NewHTTPError(400, "Missing required fields")
+	}
+	message := models.GetMessageByChannelIdAndMessageID(channelID, messageID)
+	if message == nil {
+		return echo.NewHTTPError(404, "Message not found")
+	}
+
+	return c.JSON(200, message.ToMap())
+}
