@@ -111,3 +111,61 @@ func TestGetMessagesByChannelId(t *testing.T) {
 	assert.NotEmpty(t, messages[0].CreatedAt)
 	assert.NotEmpty(t, messages[0].UpdatedAt)
 }
+
+func TestGetMessageByChannelIdAndMessageID(t *testing.T) {
+	var channelID = "27731CCA-ADB5-42DB-AA8C-500994FC4098"
+	var messageID = "1"
+
+	monkey.Patch((*gocql.Session).Query, func(_ *gocql.Session, _ string, _ ...any) *gocql.Query {
+		return &gocql.Query{}
+	})
+	monkey.Patch((*gocql.Query).Scan, func(_ *gocql.Query, dest ...any) error {
+		now := time.Now().UTC()
+		if len(dest) >= 1 {
+			if p, ok := dest[0].(*string); ok {
+				*p = messageID
+			}
+		}
+		if len(dest) >= 2 {
+			if p, ok := dest[1].(*string); ok {
+				*p = "Hello, World!"
+			}
+		}
+		if len(dest) >= 3 {
+			if p, ok := dest[2].(*string); ok {
+				*p = "A71F1694-D9AD-40E4-94D2-A59D07E9D9AF"
+			}
+		}
+		if len(dest) >= 4 {
+			if p, ok := dest[3].(*string); ok {
+				*p = channelID
+			}
+		}
+		if len(dest) >= 5 {
+			if p, ok := dest[4].(*time.Time); ok {
+				*p = now
+			}
+		}
+		if len(dest) >= 6 {
+			if p, ok := dest[5].(*time.Time); ok {
+				*p = now
+			}
+		}
+		if len(dest) >= 7 {
+			if p, ok := dest[6].(**time.Time); ok {
+				*p = nil
+			}
+		}
+		return nil
+	})
+	
+	message := models.GetMessageByChannelIdAndMessageID(channelID, messageID)
+
+	assert.Equal(t, message.ID, messageID)
+	assert.Equal(t, message.Content, "Hello, World!")
+	assert.Equal(t, message.AuthorID, "A71F1694-D9AD-40E4-94D2-A59D07E9D9AF")
+	assert.Equal(t, message.ChannelID, channelID)
+	assert.Nil(t, message.DeletedAt)
+	assert.NotEmpty(t, message.CreatedAt)
+	assert.NotEmpty(t, message.UpdatedAt)
+}
