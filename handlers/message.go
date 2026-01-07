@@ -5,52 +5,8 @@ import (
 	"MessagesService/utils"
 	"strconv"
 
-	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 )
-
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-}
-
-var connectedUser = make(map[string]*websocket.Conn)
-
-// Websocket handles websocket connections for real-time message updates
-func (h *Handler) Websocket(c echo.Context) (err error) {
-	authHeader := c.Request().Header.Get("Authorization")
-	authorID, err := utils.VerifyBearerToken(authHeader)
-	if err != nil {
-		return echo.NewHTTPError(401, err.Error())
-	}
-
-	ws, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
-	if err != nil {
-		return err
-	}
-	defer ws.Close()
-
-	connectedUser[authorID] = ws
-
-	for {
-		_, _, err := ws.ReadMessage()
-		if err != nil {
-			break
-		}
-	}
-
-	connectedUser[authorID] = nil
-	return nil
-}
-
-func (h *Handler) notify(channelID string, message *models.Message) {
-	for _, conn := range connectedUser {
-		err := conn.WriteJSON(message.ToMap())
-		if err != nil {
-			continue
-		}
-	}
-}
 
 // NewMessageHandler handles route for Post requests
 func (h *Handler) NewMessageHandler(c echo.Context) (err error) {
