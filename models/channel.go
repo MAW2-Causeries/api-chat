@@ -25,3 +25,22 @@ func GetUserChannels(userID string) []string {
 	json.Unmarshal(body, &channelIDs)
 	return channelIDs
 }
+
+func DoesUserCanSendMessageInChannel(userID, channelID string) bool {
+	baseURL := utils.GetEnv("BASE_API_URL", "http://localhost:8080/api/v1")
+	resp, err := http.Get(baseURL + "/channels/" + channelID + "/users/" + userID)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return false
+	}
+
+	return true
+}
+
+func DoesUserCanReadMessagesInChannel(userID, channelID string) bool {
+	return DoesUserCanSendMessageInChannel(userID, channelID)
+}

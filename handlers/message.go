@@ -35,6 +35,10 @@ func (h *Handler) NewMessageHandler(c echo.Context) (err error) {
 		return echo.NewHTTPError(401, err.Error())
 	}
 
+	if !models.DoesUserCanSendMessageInChannel(authorID, channelID) {
+		return echo.NewHTTPError(403, "User does not have permission to send messages in this channel")
+	}
+
 	message := models.NewMessage(
 		authorID,
 		channelID,
@@ -57,7 +61,7 @@ func (h *Handler) GetMessagesHandler(c echo.Context) (err error) {
 	page := c.QueryParam("page")
 
 	authHeader := c.Request().Header.Get("Authorization")
-	_, err = utils.VerifyBearerToken(authHeader)
+	userID, err := utils.VerifyBearerToken(authHeader)
 	if err != nil {
 		return echo.NewHTTPError(401, err.Error())
 	}
@@ -82,6 +86,10 @@ func (h *Handler) GetMessagesHandler(c echo.Context) (err error) {
 		return echo.NewHTTPError(400, "Missing channel ID")
 	}
 
+	if !models.DoesUserCanReadMessagesInChannel(userID, channelID) {
+		return echo.NewHTTPError(403, "User does not have permission to read messages in this channel")
+	}
+
 	messages, err := models.GetMessagesByChannelID(channelID, limitInt, pageInt)
 	if err != nil {
 		println(err.Error())
@@ -102,7 +110,7 @@ func (h *Handler) GetMessageHandler(c echo.Context) (err error) {
 	messageID := c.Param("messageID")
 
 	authHeader := c.Request().Header.Get("Authorization")
-	_, err = utils.VerifyBearerToken(authHeader)
+	userID, err := utils.VerifyBearerToken(authHeader)
 	if err != nil {
 		return echo.NewHTTPError(401, err.Error())
 	}
@@ -110,6 +118,11 @@ func (h *Handler) GetMessageHandler(c echo.Context) (err error) {
 	if channelID == "" || messageID == "" {
 		return echo.NewHTTPError(400, "Missing required fields")
 	}
+
+	if !models.DoesUserCanReadMessagesInChannel(userID, channelID) {
+		return echo.NewHTTPError(403, "User does not have permission to read messages in this channel")
+	}
+
 	message := models.GetMessageByChannelIDAndMessageID(channelID, messageID)
 	if message == nil {
 		return echo.NewHTTPError(404, "Message not found")
