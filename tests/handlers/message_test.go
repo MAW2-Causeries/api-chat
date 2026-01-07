@@ -37,6 +37,10 @@ func TestNewMessageHandlerReturnNewMessage(t *testing.T) {
 		return "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", nil
 	})
 
+	monkey.Patch(models.DoesUserCanSendMessageInChannel, func(userID, channelID string) bool {
+		return true
+	})
+
 	h := &handlers.Handler{}
 
 	if assert.NoError(t, h.NewMessageHandler(c)) {
@@ -96,6 +100,10 @@ func TestGetMessagesHandlerReturnMessages(t *testing.T) {
 				Content:   	"feudbfuidsfhdosr",
 			},
 		}, nil
+	})
+
+	monkey.Patch(models.DoesUserCanReadMessagesInChannel, func(userID, channelID string) bool {
+		return true
 	})
 	
 	h := &handlers.Handler{}
@@ -180,6 +188,10 @@ func TestNewMessageWithJsonBody(t *testing.T) {
 		return "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", nil
 	})
 
+	monkey.Patch(models.DoesUserCanSendMessageInChannel, func(userID, channelID string) bool {
+		return true
+	})
+
 	h := &handlers.Handler{}
 
 	if assert.NoError(t, h.NewMessageHandler(c)) {
@@ -204,6 +216,10 @@ func TestGetMessageHandlerReturnMessage(t *testing.T) {
 
 	monkey.Patch(utils.VerifyBearerToken, func(Authorization string) (string, error) {
 		return "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", nil
+	})
+
+	monkey.Patch(models.DoesUserCanReadMessagesInChannel, func(userID, channelID string) bool {
+		return true
 	})
 	
 	monkey.Patch(models.GetMessageByChannelIDAndMessageID, func(channelID string, messageID string) *models.Message {
