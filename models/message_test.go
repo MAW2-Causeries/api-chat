@@ -1,7 +1,6 @@
-package tests
+package models
 
 import (
-	"MessagesService/models"
 	"testing"
 	"time"
 
@@ -46,7 +45,7 @@ func TestNewMessage(t *testing.T) {
 		return nil
 	})
 	
-	var message = models.NewMessage(authorID, channelID, content)
+	var message = NewMessage(authorID, channelID, content)
 
 	assert.Equal(t, message.Content, content)
 	assert.Equal(t, message.AuthorID, authorID)
@@ -99,7 +98,7 @@ func TestGetMessagesByChannelId(t *testing.T) {
 		return false // end of iteration after one record
 	})
 
-	messages, err := models.GetMessagesByChannelID(channelID, limit, page)
+	messages, err := GetMessagesByChannelID(channelID, limit, page)
 
 	assert.Nil(t, err)
 	assert.Len(t, messages, 1)
@@ -159,7 +158,7 @@ func TestGetMessageByChannelIDAndMessageID(t *testing.T) {
 		return nil
 	})
 	
-	message := models.GetMessageByChannelIDAndMessageID(channelID, messageID)
+	message := GetMessageByChannelIDAndMessageID(channelID, messageID)
 
 	assert.Equal(t, message.ID, messageID)
 	assert.Equal(t, message.Content, "Hello, World!")

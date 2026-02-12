@@ -1,7 +1,6 @@
-package tests
+package handlers
 
 import (
-	"MessagesService/handlers"
 	"MessagesService/models"
 	"MessagesService/utils"
 	"encoding/json"
@@ -41,7 +40,7 @@ func TestNewMessageHandlerReturnNewMessage(t *testing.T) {
 		return true
 	})
 
-	h := &handlers.Handler{}
+	h := &Handler{}
 
 	if assert.NoError(t, h.NewMessageHandler(c)) {
 		assert.Equal(t, http.StatusCreated, rec.Code)
@@ -68,7 +67,7 @@ func TestNewMessageHandlerMissingFields(t *testing.T) {
 		return "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", nil
 	})
 	
-	h := &handlers.Handler{}
+	h := &Handler{}
 	
 	err := h.NewMessageHandler(c)
 	if he, ok := err.(*echo.HTTPError); ok {
@@ -106,7 +105,7 @@ func TestGetMessagesHandlerReturnMessages(t *testing.T) {
 		return true
 	})
 	
-	h := &handlers.Handler{}
+	h := &Handler{}
 	if assert.NoError(t, h.GetMessagesHandler(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		
@@ -132,7 +131,7 @@ func TestGetMessagesHandlerMissingChannelID(t *testing.T) {
 		return "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", nil
 	})
 	
-	h := &handlers.Handler{}
+	h := &Handler{}
 	
 	err := h.GetMessagesHandler(c)
 	if he, ok := err.(*echo.HTTPError); ok {
@@ -155,7 +154,7 @@ func TestGetMessageUnauthorized(t *testing.T) {
 		return "", errors.New("invalid token")
 	})
 	
-	h := &handlers.Handler{}
+	h := &Handler{}
 	
 	err := h.GetMessagesHandler(c)
 	if he, ok := err.(*echo.HTTPError); ok {
@@ -192,7 +191,7 @@ func TestNewMessageWithJsonBody(t *testing.T) {
 		return true
 	})
 
-	h := &handlers.Handler{}
+	h := &Handler{}
 
 	if assert.NoError(t, h.NewMessageHandler(c)) {
 		assert.Equal(t, http.StatusCreated, rec.Code)
@@ -231,7 +230,7 @@ func TestGetMessageHandlerReturnMessage(t *testing.T) {
 		}
 	})
 	
-	h := &handlers.Handler{}
+	h := &Handler{}
 	if assert.NoError(t, h.GetMessageHandler(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		
@@ -260,7 +259,7 @@ func TestGetMessageHandlerMessageNotFound(t *testing.T) {
 		return nil
 	})
 	
-	h := &handlers.Handler{}
+	h := &Handler{}
 	
 	err := h.GetMessageHandler(c)
 	if he, ok := err.(*echo.HTTPError); ok {

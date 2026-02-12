@@ -1,7 +1,6 @@
-package tests
+package models
 
 import (
-	"MessagesService/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -23,7 +22,7 @@ func TestGetUserChannels(t *testing.T) {
 
 	t.Setenv("BASE_API_URL", server.URL+"/api/v1")
 
-	usersChannels := models.GetUserChannels(fakeUserID)
+	usersChannels := GetUserChannels(fakeUserID)
 
 	expectedChannels := []string{
 		"27731CCA-ADB5-42DB-AA8C-500994FC4098",
@@ -44,7 +43,7 @@ func TestDoesUserCanSendMessageInChannel(t *testing.T) {
 
 	t.Setenv("BASE_API_URL", server.URL+"/api/v1")
 
-	canSend := models.DoesUserCanSendMessageInChannel(fakeUserID, fakeChannelID)
+	canSend := DoesUserCanSendMessageInChannel(fakeUserID, fakeChannelID)
 
 	assert.True(t, canSend)
 }
@@ -60,7 +59,7 @@ func TestDoesUserCanReadMessagesInChannel(t *testing.T) {
 
 	t.Setenv("BASE_API_URL", server.URL+"/api/v1")
 
-	canRead := models.DoesUserCanReadMessagesInChannel(fakeUserID, fakeChannelID)
+	canRead := DoesUserCanReadMessagesInChannel(fakeUserID, fakeChannelID)
 
 	assert.True(t, canRead)
 }
