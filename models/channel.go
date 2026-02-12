@@ -41,6 +41,7 @@ func DoesUserCanSendMessageInChannel(userID, channelID string) bool {
 	return true
 }
 
+/* TODO: This function is currently the same as DoesUserCanSendMessageInChannel, but it can be modified in the future if the permissions for reading and sending messages differ. */
 func DoesUserCanReadMessagesInChannel(userID, channelID string) bool {
 	return DoesUserCanSendMessageInChannel(userID, channelID)
 }
