@@ -97,7 +97,7 @@ func GetMessageByChannelIDAndMessageID(channelID string, messageID string) *Mess
 }
 
 // GetMessagesByChannelID retrieves messages for a given channel ID
-func GetMessagesByChannelID(channelID string, pageSize, pageNumber int) ([]*Message, error) {
+func GetMessagesByChannelID(channelID string, pageSize, pageNumber int) []*Message {
 	var messages []*Message
 
 	q := databases.Session.Query(`
@@ -131,9 +131,7 @@ func GetMessagesByChannelID(channelID string, pageSize, pageNumber int) ([]*Mess
 		messages = append(messages, message)
 	}
 
-	if err := iter.Close(); err != nil {
-		return nil, err
-	}
+	iter.Close();
 
-	return messages, nil
+	return messages
 }

@@ -90,9 +90,8 @@ func (h *Handler) GetMessagesHandler(c echo.Context) (err error) {
 		return echo.NewHTTPError(403, "User does not have permission to read messages in this channel")
 	}
 
-	messages, err := models.GetMessagesByChannelID(channelID, limitInt, pageInt)
-	if err != nil {
-		println(err.Error())
+	messages := models.GetMessagesByChannelID(channelID, limitInt, pageInt)
+	if messages == nil {
 		return echo.NewHTTPError(500, "Failed to retrieve messages")
 	}
 
