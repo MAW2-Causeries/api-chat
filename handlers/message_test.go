@@ -54,6 +54,29 @@ func TestNewMessageHandlerReturnNewMessage(t *testing.T) {
 	}
 }
 
+func TestNewMessageHandlerInvalidJSONBody(t *testing.T) {
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages", strings.NewReader("{invalid json}"))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("channelID")
+	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097")
+
+	monkey.Patch(utils.VerifyBearerToken, func(Authorization string) (string, error) {
+		return "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", nil
+	})
+
+	h := &Handler{}
+	err := h.NewMessageHandler(c)
+	if he, ok := err.(*echo.HTTPError); ok {
+		assert.Equal(t, http.StatusBadRequest, he.Code)
+		assert.Equal(t, "Invalid JSON body", he.Message)
+	} else {
+		t.Fatalf("expected HTTPError, got %v", err)
+	}
+}
+
 func TestNewMessageHandlerMissingFields(t *testing.T) {
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages", strings.NewReader(""))
