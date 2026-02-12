@@ -90,7 +90,7 @@ func TestGetMessagesHandlerReturnMessages(t *testing.T) {
 		return "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", nil
 	})
 	
-	monkey.Patch(models.GetMessagesByChannelID, func(channelID string, limit, page int) ([]*models.Message, error) {
+	monkey.Patch(models.GetMessagesByChannelID, func(channelID string, limit, page int) []*models.Message {
 		return []*models.Message{
 			{
 				ID:       	"bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
@@ -98,7 +98,7 @@ func TestGetMessagesHandlerReturnMessages(t *testing.T) {
 				ChannelID: 	"f63f7c42-c567-4b17-bd3a-93c1eb510ed9",
 				Content:   	"feudbfuidsfhdosr",
 			},
-		}, nil
+		}
 	})
 
 	monkey.Patch(models.DoesUserCanReadMessagesInChannel, func(userID, channelID string) bool {
