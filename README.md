@@ -33,6 +33,12 @@ Run the tests using the command:
 go test ./...
 ```
 
+Run the tests with coverage report using the command:
+```bash
+go test -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out
+```
+
 ### Linting
 
 To lint the code, use the command:
