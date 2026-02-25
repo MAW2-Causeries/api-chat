@@ -261,3 +261,306 @@ func TestGetMessageHandlerMessageNotFound(t *testing.T) {
 		t.Fatalf("expected HTTPError, got %v", err)
 	}
 }
+
+func TestGetMessageHandlerInvalidLimit(t *testing.T) {
+	e := echo.New()
+	requestContext := context.WithValue(context.Background(), middlewares.UserIDKey, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70")
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages?limit=invalid", nil)
+	req = req.WithContext(requestContext)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("channelID")
+	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097")
+
+	h := &Handler{}
+
+	err := h.GetMessagesHandler(c)
+	if he, ok := err.(*echo.HTTPError); ok {
+		assert.Equal(t, http.StatusBadRequest, he.Code)
+		assert.Equal(t, "Invalid limit; must be an integer between 1 and 100", he.Message)
+	} else {
+		t.Fatalf("expected HTTPError, got %v", err)
+	}
+}
+func TestGetMessagesHandlerInvalidPage(t *testing.T) {
+	e := echo.New()
+	requestContext := context.WithValue(context.Background(), middlewares.UserIDKey, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70")
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages?page=invalid", nil)
+	req = req.WithContext(requestContext)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("channelID")
+	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097")
+
+	h := &Handler{}
+
+	err := h.GetMessagesHandler(c)
+	if he, ok := err.(*echo.HTTPError); ok {
+		assert.Equal(t, http.StatusBadRequest, he.Code)
+		assert.Equal(t, "Invalid page; must be an integer greater than 0", he.Message)
+	} else {
+		t.Fatalf("expected HTTPError, got %v", err)
+	}
+}
+
+func TestGetMessagesHandlerNegativePage(t *testing.T) {
+	e := echo.New()
+	requestContext := context.WithValue(context.Background(), middlewares.UserIDKey, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70")
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages?page=-1", nil)
+	req = req.WithContext(requestContext)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("channelID")
+	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097")
+
+	h := &Handler{}
+
+	err := h.GetMessagesHandler(c)
+	if he, ok := err.(*echo.HTTPError); ok {
+		assert.Equal(t, http.StatusBadRequest, he.Code)
+		assert.Equal(t, "Invalid page; must be an integer greater than 0", he.Message)
+	} else {
+		t.Fatalf("expected HTTPError, got %v", err)
+	}
+}
+
+func TestGetMessagesHandlerZeroPage(t *testing.T) {
+	e := echo.New()
+	requestContext := context.WithValue(context.Background(), middlewares.UserIDKey, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70")
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages?page=0", nil)
+	req = req.WithContext(requestContext)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("channelID")
+	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097")
+
+	h := &Handler{}
+
+	err := h.GetMessagesHandler(c)
+	if he, ok := err.(*echo.HTTPError); ok {
+		assert.Equal(t, http.StatusBadRequest, he.Code)
+		assert.Equal(t, "Invalid page; must be an integer greater than 0", he.Message)
+	} else {
+		t.Fatalf("expected HTTPError, got %v", err)
+	}
+}
+func TestGetMessagesHandlerUserNoPermission(t *testing.T) {
+	e := echo.New()
+	requestContext := context.WithValue(context.Background(), middlewares.UserIDKey, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70")
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages", nil)
+	req = req.WithContext(requestContext)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("channelID")
+	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097")
+
+	monkey.Patch(models.DoesUserCanSendMessageInChannel, func(userID, channelID string) bool {
+		return false
+	})
+
+	h := &Handler{}
+
+	err := h.GetMessagesHandler(c)
+	if he, ok := err.(*echo.HTTPError); ok {
+		assert.Equal(t, http.StatusForbidden, he.Code)
+		assert.Equal(t, "User does not have permission to read messages in this channel", he.Message)
+	} else {
+		t.Fatalf("expected HTTPError, got %v", err)
+	}
+}
+
+func TestGetMessageHandlerUserNoPermission(t *testing.T) {
+	e := echo.New()
+	requestContext := context.WithValue(context.Background(), middlewares.UserIDKey, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70")
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages/BB6A2B8A-954A-4AC2-A7B9-4B5A100AFB70", nil)
+	req = req.WithContext(requestContext)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("channelID", "messageID")
+	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097", "BB6A2B8A-954A-4AC2-A7B9-4B5A100AFB70")
+
+	monkey.Patch(models.DoesUserCanSendMessageInChannel, func(userID, channelID string) bool {
+		return false
+	})
+
+	monkey.Patch(models.GetMessageByChannelIDAndMessageID, func(channelID string, messageID string) *models.Message {
+		return &models.Message{
+			ID:       	"bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
+			AuthorID:  	"bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
+			ChannelID: 	"f63f7c42-c567-4b17-bd3a-93c1eb510ed9",
+			Content:   	"feudbfuidsfhdosr",
+		}
+	})
+
+	h := &Handler{}
+
+	err := h.GetMessageHandler(c)
+	if he, ok := err.(*echo.HTTPError); ok {
+		assert.Equal(t, http.StatusForbidden, he.Code)
+		assert.Equal(t, "User does not have permission to read messages in this channel", he.Message)
+	} else {
+		t.Fatalf("expected HTTPError, got %v", err)
+	}
+}
+func TestGetMessagesHandlerFailedToRetrieveMessages(t *testing.T) {
+	e := echo.New()
+	requestContext := context.WithValue(context.Background(), middlewares.UserIDKey, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70")
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages", nil)
+	req = req.WithContext(requestContext)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("channelID")
+	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097")
+
+	monkey.Patch(models.DoesUserCanSendMessageInChannel, func(userID, channelID string) bool {
+		return true
+	})
+
+	monkey.Patch(models.GetMessagesByChannelID, func(channelID string, limit, page int) []*models.Message {
+		return nil
+	})
+
+	h := &Handler{}
+
+	err := h.GetMessagesHandler(c)
+	if he, ok := err.(*echo.HTTPError); ok {
+		assert.Equal(t, http.StatusInternalServerError, he.Code)
+		assert.Equal(t, "Failed to retrieve messages", he.Message)
+	} else {
+		t.Fatalf("expected HTTPError, got %v", err)
+	}
+}
+func TestNewMessageHandlerMissingChannelID(t *testing.T) {
+	e := echo.New()
+	requestContext := context.WithValue(context.Background(), middlewares.UserIDKey, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/channels//messages", strings.NewReader("{\"content\":\"hello world\"}"))
+	req = req.WithContext(requestContext)
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("channelID")
+	c.SetParamValues("")
+
+	h := &Handler{}
+	err := h.NewMessageHandler(c)
+	if he, ok := err.(*echo.HTTPError); ok {
+		assert.Equal(t, http.StatusBadRequest, he.Code)
+		assert.Equal(t, "Missing required fields", he.Message)
+	} else {
+		t.Fatalf("expected HTTPError, got %v", err)
+	}
+}
+
+func TestNewMessageHandlerMissingContent(t *testing.T) {
+	e := echo.New()
+	requestContext := context.WithValue(context.Background(), middlewares.UserIDKey, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages", strings.NewReader("{\"content\":\"\"}"))
+	req = req.WithContext(requestContext)
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("channelID")
+	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097")
+
+	h := &Handler{}
+	err := h.NewMessageHandler(c)
+	if he, ok := err.(*echo.HTTPError); ok {
+		assert.Equal(t, http.StatusBadRequest, he.Code)
+		assert.Equal(t, "Missing required fields", he.Message)
+	} else {
+		t.Fatalf("expected HTTPError, got %v", err)
+	}
+}
+
+func TestGetMessageHandlerMissingChannelID(t *testing.T) {
+	e := echo.New()
+	requestContext := context.WithValue(context.Background(), middlewares.UserIDKey, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70")
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/channels//messages/BB6A2B8A-954A-4AC2-A7B9-4B5A100AFB70", nil)
+	req = req.WithContext(requestContext)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("channelID", "messageID")
+	c.SetParamValues("", "BB6A2B8A-954A-4AC2-A7B9-4B5A100AFB70")
+
+	h := &Handler{}
+	err := h.GetMessageHandler(c)
+	if he, ok := err.(*echo.HTTPError); ok {
+		assert.Equal(t, http.StatusBadRequest, he.Code)
+		assert.Equal(t, "Missing required fields", he.Message)
+	} else {
+		t.Fatalf("expected HTTPError, got %v", err)
+	}
+}
+
+func TestGetMessageHandlerMissingMessageID(t *testing.T) {
+	e := echo.New()
+	requestContext := context.WithValue(context.Background(), middlewares.UserIDKey, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70")
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages/", nil)
+	req = req.WithContext(requestContext)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("channelID", "messageID")
+	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097", "")
+
+	h := &Handler{}
+	err := h.GetMessageHandler(c)
+	if he, ok := err.(*echo.HTTPError); ok {
+		assert.Equal(t, http.StatusBadRequest, he.Code)
+		assert.Equal(t, "Missing required fields", he.Message)
+	} else {
+		t.Fatalf("expected HTTPError, got %v", err)
+	}
+}
+func TestNewMessageHandlerUserNoPermission(t *testing.T) {
+	e := echo.New()
+	requestContext := context.WithValue(context.Background(), middlewares.UserIDKey, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages", strings.NewReader("{\"content\":\"hello world\"}"))
+	req = req.WithContext(requestContext)
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("channelID")
+	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097")
+
+	monkey.Patch(models.DoesUserCanSendMessageInChannel, func(userID, channelID string) bool {
+		return false
+	})
+
+	h := &Handler{}
+	err := h.NewMessageHandler(c)
+	if he, ok := err.(*echo.HTTPError); ok {
+		assert.Equal(t, http.StatusForbidden, he.Code)
+		assert.Equal(t, "User does not have permission to send messages in this channel", he.Message)
+	} else {
+		t.Fatalf("expected HTTPError, got %v", err)
+	}
+}
+
+func TestNewMessageHandlerFailedToCreateMessage(t *testing.T) {
+	e := echo.New()
+	requestContext := context.WithValue(context.Background(), middlewares.UserIDKey, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages", strings.NewReader("{\"content\":\"hello world\"}"))
+	req = req.WithContext(requestContext)
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("channelID")
+	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097")
+
+	monkey.Patch(models.NewMessage, func(authorID, channelID, content string) *models.Message {
+		return nil
+	})
+
+	monkey.Patch(models.DoesUserCanSendMessageInChannel, func(userID, channelID string) bool {
+		return true
+	})
+
+	h := &Handler{}
+	err := h.NewMessageHandler(c)
+	if he, ok := err.(*echo.HTTPError); ok {
+		assert.Equal(t, http.StatusInternalServerError, he.Code)
+		assert.Equal(t, "Failed to create message", he.Message)
+	} else {
+		t.Fatalf("expected HTTPError, got %v", err)
+	}
+}
