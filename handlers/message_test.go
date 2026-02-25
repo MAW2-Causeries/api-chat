@@ -1,10 +1,10 @@
 package handlers
 
 import (
+	"MessagesService/middlewares"
 	"MessagesService/models"
-	"MessagesService/utils"
+	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -17,8 +17,11 @@ import (
 
 func TestNewMessageHandlerReturnNewMessage(t *testing.T) {
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages", strings.NewReader("author_id=DD79A816-D227-4AEC-B413-6AF520B0B157&content=hello+world"))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	requestContext := context.WithValue(context.Background(), middlewares.UserIDKey, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages", strings.NewReader("{\"content\":\"hello world\"}"))
+	req = req.WithContext(requestContext)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer valid_token")
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetParamNames("channelID")
@@ -29,11 +32,8 @@ func TestNewMessageHandlerReturnNewMessage(t *testing.T) {
 			ID:       	"bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
 			AuthorID:  	"bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
 			ChannelID: 	"f63f7c42-c567-4b17-bd3a-93c1eb510ed9",
-			Content:   	"feudbfuidsfhdosr",
+			Content:   	"hello world",
 		}
-	})
-	monkey.Patch(utils.VerifyBearerToken, func(Authorization string) (string, error) {
-		return "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", nil
 	})
 
 	monkey.Patch(models.DoesUserCanSendMessageInChannel, func(userID, channelID string) bool {
@@ -49,23 +49,21 @@ func TestNewMessageHandlerReturnNewMessage(t *testing.T) {
 		if assert.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp)) {
 			assert.Equal(t, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", resp["author_id"])
 			assert.Equal(t, "f63f7c42-c567-4b17-bd3a-93c1eb510ed9", resp["channel_id"])
-			assert.Equal(t, "feudbfuidsfhdosr", resp["content"])
+			assert.Equal(t, "hello world", resp["content"])
 		}
 	}
 }
 
 func TestNewMessageHandlerInvalidJSONBody(t *testing.T) {
 	e := echo.New()
+	requestContext := context.WithValue(context.Background(), middlewares.UserIDKey, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70")
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages", strings.NewReader("{invalid json}"))
+	req = req.WithContext(requestContext)
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetParamNames("channelID")
 	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097")
-
-	monkey.Patch(utils.VerifyBearerToken, func(Authorization string) (string, error) {
-		return "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", nil
-	})
 
 	h := &Handler{}
 	err := h.NewMessageHandler(c)
@@ -79,16 +77,14 @@ func TestNewMessageHandlerInvalidJSONBody(t *testing.T) {
 
 func TestNewMessageHandlerMissingFields(t *testing.T) {
 	e := echo.New()
+	requestContext := context.WithValue(context.Background(), middlewares.UserIDKey, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70")
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages", strings.NewReader(""))
+	req = req.WithContext(requestContext)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetParamNames("channelID")
 	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097")
-
-	monkey.Patch(utils.VerifyBearerToken, func(Authorization string) (string, error) {
-		return "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", nil
-	})
 	
 	h := &Handler{}
 	
@@ -103,16 +99,18 @@ func TestNewMessageHandlerMissingFields(t *testing.T) {
 
 func TestGetMessagesHandlerReturnMessages(t *testing.T) {
 	e := echo.New()
+	requestContext := context.WithValue(context.Background(), middlewares.UserIDKey, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70")
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages", nil)
+	req = req.WithContext(requestContext)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetParamNames("channelID")
 	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097")
 
-	monkey.Patch(utils.VerifyBearerToken, func(Authorization string) (string, error) {
-		return "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", nil
+	monkey.Patch(models.DoesUserCanSendMessageInChannel, func(userID, channelID string) bool {
+		return true
 	})
-	
+
 	monkey.Patch(models.GetMessagesByChannelID, func(channelID string, limit, page int) []*models.Message {
 		return []*models.Message{
 			{
@@ -122,10 +120,6 @@ func TestGetMessagesHandlerReturnMessages(t *testing.T) {
 				Content:   	"feudbfuidsfhdosr",
 			},
 		}
-	})
-
-	monkey.Patch(models.DoesUserCanReadMessagesInChannel, func(userID, channelID string) bool {
-		return true
 	})
 	
 	h := &Handler{}
@@ -144,15 +138,13 @@ func TestGetMessagesHandlerReturnMessages(t *testing.T) {
 
 func TestGetMessagesHandlerMissingChannelID(t *testing.T) {
 	e := echo.New()
+	requestContext := context.WithValue(context.Background(), middlewares.UserIDKey, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70")
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/channels//messages", nil)
+	req = req.WithContext(requestContext)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetParamNames("channelID")
 	c.SetParamValues("")
-
-	monkey.Patch(utils.VerifyBearerToken, func(Authorization string) (string, error) {
-		return "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", nil
-	})
 	
 	h := &Handler{}
 	
@@ -165,34 +157,13 @@ func TestGetMessagesHandlerMissingChannelID(t *testing.T) {
 	}
 }
 
-func TestGetMessageUnauthorized(t *testing.T) {
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetParamNames("channelID")
-	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097")
-
-	monkey.Patch(utils.VerifyBearerToken, func(Authorization string) (string, error) {
-		return "", errors.New("invalid token")
-	})
-	
-	h := &Handler{}
-	
-	err := h.GetMessagesHandler(c)
-	if he, ok := err.(*echo.HTTPError); ok {
-		assert.Equal(t, http.StatusUnauthorized, he.Code)
-		assert.Equal(t, "invalid token", he.Message)
-	} else {
-		t.Fatalf("expected HTTPError, got %v", err)
-	}
-}
-
 func TestNewMessageWithJsonBody(t *testing.T) {
 	e := echo.New()
+	requestContext := context.WithValue(context.Background(), middlewares.UserIDKey, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70")
 	jsonBody := `{"content":"Hello, JSON!"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages", strings.NewReader(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
+	req = req.WithContext(requestContext)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetParamNames("channelID")
@@ -206,9 +177,7 @@ func TestNewMessageWithJsonBody(t *testing.T) {
 			Content:   	"Hello, JSON!",
 		}
 	})
-	monkey.Patch(utils.VerifyBearerToken, func(Authorization string) (string, error) {
-		return "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", nil
-	})
+
 
 	monkey.Patch(models.DoesUserCanSendMessageInChannel, func(userID, channelID string) bool {
 		return true
@@ -230,17 +199,15 @@ func TestNewMessageWithJsonBody(t *testing.T) {
 
 func TestGetMessageHandlerReturnMessage(t *testing.T) {
 	e := echo.New()
+	requestContext := context.WithValue(context.Background(), middlewares.UserIDKey, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70")
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages/BB6A2B8A-954A-4AC2-A7B9-4B5A100AFB70", nil)
+	req = req.WithContext(requestContext)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetParamNames("channelID", "messageID")
 	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097", "BB6A2B8A-954A-4AC2-A7B9-4B5A100AFB70")
 
-	monkey.Patch(utils.VerifyBearerToken, func(Authorization string) (string, error) {
-		return "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", nil
-	})
-
-	monkey.Patch(models.DoesUserCanReadMessagesInChannel, func(userID, channelID string) bool {
+	monkey.Patch(models.DoesUserCanSendMessageInChannel, func(userID, channelID string) bool {
 		return true
 	})
 	
@@ -268,18 +235,20 @@ func TestGetMessageHandlerReturnMessage(t *testing.T) {
 
 func TestGetMessageHandlerMessageNotFound(t *testing.T) {
 	e := echo.New()
+	requestContext := context.WithValue(context.Background(), middlewares.UserIDKey, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70")
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages/BB6A2B8A-954A-4AC2-A7B9-4B5A100AFB70", nil)
+	req = req.WithContext(requestContext)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetParamNames("channelID", "messageID")
 	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097", "BB6A2B8A-954A-4AC2-A7B9-4B5A100AFB70")
-
-	monkey.Patch(utils.VerifyBearerToken, func(Authorization string) (string, error) {
-		return "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", nil
-	})
 	
 	monkey.Patch(models.GetMessageByChannelIDAndMessageID, func(channelID string, messageID string) *models.Message {
 		return nil
+	})
+
+	monkey.Patch(models.DoesUserCanSendMessageInChannel, func(userID, channelID string) bool {
+		return true
 	})
 	
 	h := &Handler{}

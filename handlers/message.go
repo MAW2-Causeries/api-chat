@@ -1,8 +1,8 @@
 package handlers
 
 import (
+	"MessagesService/middlewares"
 	"MessagesService/models"
-	"MessagesService/utils"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
@@ -23,16 +23,10 @@ func (h *Handler) NewMessageHandler(c echo.Context) (err error) {
 	} else {
 		content = c.FormValue("content")
 	}
-	authorID := ""
+	authorID := c.Request().Context().Value(middlewares.UserIDKey).(string)
 
 	if channelID == "" || content == "" {
 		return echo.NewHTTPError(400, "Missing required fields")
-	}
-
-	authHeader := c.Request().Header.Get("Authorization")
-	authorID, err = utils.VerifyBearerToken(authHeader)
-	if err != nil {
-		return echo.NewHTTPError(401, err.Error())
 	}
 
 	if !models.DoesUserCanSendMessageInChannel(authorID, channelID) {
@@ -60,11 +54,7 @@ func (h *Handler) GetMessagesHandler(c echo.Context) (err error) {
 	limit := c.QueryParam("limit")
 	page := c.QueryParam("page")
 
-	authHeader := c.Request().Header.Get("Authorization")
-	userID, err := utils.VerifyBearerToken(authHeader)
-	if err != nil {
-		return echo.NewHTTPError(401, err.Error())
-	}
+	userID := c.Request().Context().Value(middlewares.UserIDKey).(string)
 
 	if limit == "" {
 		limit = "50"
@@ -108,12 +98,8 @@ func (h *Handler) GetMessageHandler(c echo.Context) (err error) {
 	channelID := c.Param("channelID")
 	messageID := c.Param("messageID")
 
-	authHeader := c.Request().Header.Get("Authorization")
-	userID, err := utils.VerifyBearerToken(authHeader)
-	if err != nil {
-		return echo.NewHTTPError(401, err.Error())
-	}
-	
+	userID := c.Request().Context().Value(middlewares.UserIDKey).(string)
+
 	if channelID == "" || messageID == "" {
 		return echo.NewHTTPError(400, "Missing required fields")
 	}

@@ -1,8 +1,8 @@
 package handlers
 
 import (
+	"MessagesService/middlewares"
 	"MessagesService/models"
-	"MessagesService/utils"
 
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
@@ -18,11 +18,7 @@ var channelsSubscribtion = make(map[string][]string)
 
 // Websocket handles websocket connections for real-time message updates
 func (h *Handler) Websocket(c echo.Context) (err error) {
-	authHeader := c.Request().Header.Get("Authorization")
-	userID, err := utils.VerifyBearerToken(authHeader)
-	if err != nil {
-		return echo.NewHTTPError(401, err.Error())
-	}
+	userID := c.Request().Context().Value(middlewares.UserIDKey).(string)
 
 	ws, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
 	if err != nil {

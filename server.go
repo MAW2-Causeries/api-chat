@@ -3,6 +3,7 @@ package main
 import (
 	"MessagesService/databases"
 	"MessagesService/handlers"
+	"MessagesService/middlewares"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
@@ -23,6 +24,8 @@ func main() {
 	e := echo.New()
 
 	h := &handlers.Handler{}
+
+	e.Use(echo.WrapMiddleware(middlewares.Authentification))
 
 	e.POST(_prefix + "/channels/:channelID/messages", h.NewMessageHandler)
 	e.GET(_prefix + "/channels/:channelID/messages", h.GetMessagesHandler)
