@@ -47,6 +47,48 @@ go install golang.org/x/lint/golint@latest # first install golint
 golint ./...
 ```
 
+### Deployment
+
+To deploy the application, you can use a containerization platform like Docker or a cloud service that supports Go applications. Ensure that your ScyllaDB instance is accessible from the deployment environment and that the necessary environment variables are set.
+```bash
+# Build the Docker image
+docker build -t causerie-messages-service .
+# Run the Docker container
+docker run -d -p 1323:1323 --env-file .env causerie-messages-service
+```
+
+example of a `docker-compose.yml` file to run the Messages Service API along with a ScyllaDB instance:
+```yml
+services:
+  messages-service:
+    image: causerie-messages-service
+    restart: always
+    ports:
+      - "1323:1323"
+    environment:
+      SCYLLA_HOST: scylla
+      SCYLLA_KEYSPACE: causeriechat
+      SCYLLA_PASSWORD: ""
+      SCYLLA_USER: ""
+      BASE_API_URL: http://localhost # Used to contact the base api that manage channels
+      JWT_SECRET: your_jwt_secret_here # Replace with a secure secret in production 
+    depends_on:
+      - scylla
+    networks:
+      - chat-network
+  scylla:
+    image: scylladb/scylla:2025.3
+    restart: always
+    ports:
+      - "9042:9042"
+    networks:
+      - chat-network
+
+networks:
+  chat-network:
+    driver: bridge
+```
+
 ### Setting Up ScyllaDB
 #### Docker Installation (Recommended)
 

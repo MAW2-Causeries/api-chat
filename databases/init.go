@@ -2,6 +2,7 @@ package databases
 
 import (
 	"MessagesService/utils"
+	"fmt"
 
 	"github.com/gocql/gocql"
 )
@@ -21,14 +22,23 @@ func InitDatabases() error {
 		Username: username,
 		Password: password,
 	}
-	cluster.Keyspace = keyspace
 
 	session, err := cluster.CreateSession()
 	if err != nil {
 		return err
 	}
+	defer session.Close()
 
-	Session = session
+	query := fmt.Sprintf(`CREATE KEYSPACE IF NOT EXISTS %s WITH replication = {'class': 'NetworkTopologyStrategy', 'replication_factor': 1}`, keyspace)
+	if err := session.Query(query).Exec(); err != nil {
+		return err
+	}
+
+	cluster.Keyspace = keyspace
+	Session, err = cluster.CreateSession()
+	if err != nil {
+		return err
+	}
 
 	err = Migrate()
 	if err != nil {

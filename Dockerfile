@@ -1,0 +1,32 @@
+FROM golang:1.25.4-alpine AS builder
+
+WORKDIR /app
+
+COPY . .
+
+RUN go mod tidy
+RUN go build -o main .
+
+FROM alpine:latest
+
+WORKDIR /app
+
+COPY --from=builder /app/main .
+
+EXPOSE 8080
+
+ARG SCYLLA_USER
+ARG SCYLLA_PASS
+ARG SCYLLA_KEYSPACE
+ARG JWT_SECRET
+ARG BASE_API_URL
+
+ENV SCYLLA_HOST="localhost" \
+    SCYLLA_PORT="9042" \
+    SCYLLA_USER=${SCYLLA_USER} \
+    SCYLLA_PASS=${SCYLLA_PASS} \
+    SCYLLA_KEYSPACE=${SCYLLA_KEYSPACE} \
+    JWT_SECRET=${JWT_SECRET} \
+    BASE_API_URL=${BASE_API_URL}
+
+CMD ["./main"]
