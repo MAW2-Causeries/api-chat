@@ -1,4 +1,4 @@
-module MessagesService
+module cpnv.ch/messagesservice
 
 go 1.25.4
 

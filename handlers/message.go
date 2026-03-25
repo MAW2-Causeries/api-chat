@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"MessagesService/middlewares"
-	"MessagesService/models"
+	"cpnv.ch/messagesservice/middlewares"
+	"cpnv.ch/messagesservice/models"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
@@ -71,7 +71,7 @@ func (h *Handler) GetMessagesHandler(c echo.Context) (err error) {
 	if err != nil || pageInt < 1 {
 		return echo.NewHTTPError(400, "Invalid page; must be an integer greater than 0")
 	}
-	
+
 	if channelID == "" {
 		return echo.NewHTTPError(400, "Missing channel ID")
 	}

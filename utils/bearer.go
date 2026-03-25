@@ -2,6 +2,7 @@ package utils
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/golang-jwt/jwt/v4"
 )
@@ -10,6 +11,9 @@ import (
 func VerifyBearerToken(Authorization string) (string, error) {
 	if Authorization == "" {
 		return "", errors.New("missing token")
+	}
+	if !strings.HasPrefix(Authorization, "Bearer ") {
+		return "", errors.New("invalid token")
 	}
 	tokenString := Authorization[len("Bearer "):]
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {

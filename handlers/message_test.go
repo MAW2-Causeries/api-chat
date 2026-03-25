@@ -1,10 +1,10 @@
 package handlers
 
 import (
-	"MessagesService/middlewares"
-	"MessagesService/models"
 	"context"
 	"encoding/json"
+	"cpnv.ch/messagesservice/middlewares"
+	"cpnv.ch/messagesservice/models"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -29,10 +29,10 @@ func TestNewMessageHandlerReturnNewMessage(t *testing.T) {
 
 	monkey.Patch(models.NewMessage, func(authorID, channelID, content string) *models.Message {
 		return &models.Message{
-			ID:       	"bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
-			AuthorID:  	"bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
-			ChannelID: 	"f63f7c42-c567-4b17-bd3a-93c1eb510ed9",
-			Content:   	"hello world",
+			ID:        "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
+			AuthorID:  "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
+			ChannelID: "f63f7c42-c567-4b17-bd3a-93c1eb510ed9",
+			Content:   "hello world",
 		}
 	})
 
@@ -85,9 +85,9 @@ func TestNewMessageHandlerMissingFields(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetParamNames("channelID")
 	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097")
-	
+
 	h := &Handler{}
-	
+
 	err := h.NewMessageHandler(c)
 	if he, ok := err.(*echo.HTTPError); ok {
 		assert.Equal(t, http.StatusBadRequest, he.Code)
@@ -114,18 +114,18 @@ func TestGetMessagesHandlerReturnMessages(t *testing.T) {
 	monkey.Patch(models.GetMessagesByChannelID, func(channelID string, limit, page int) []*models.Message {
 		return []*models.Message{
 			{
-				ID:       	"bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
-				AuthorID:  	"bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
-				ChannelID: 	"f63f7c42-c567-4b17-bd3a-93c1eb510ed9",
-				Content:   	"feudbfuidsfhdosr",
+				ID:        "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
+				AuthorID:  "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
+				ChannelID: "f63f7c42-c567-4b17-bd3a-93c1eb510ed9",
+				Content:   "feudbfuidsfhdosr",
 			},
 		}
 	})
-	
+
 	h := &Handler{}
 	if assert.NoError(t, h.GetMessagesHandler(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		
+
 		var resp []map[string]any
 		if assert.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp)) {
 			assert.Len(t, resp, 1)
@@ -145,9 +145,9 @@ func TestGetMessagesHandlerMissingChannelID(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetParamNames("channelID")
 	c.SetParamValues("")
-	
+
 	h := &Handler{}
-	
+
 	err := h.GetMessagesHandler(c)
 	if he, ok := err.(*echo.HTTPError); ok {
 		assert.Equal(t, http.StatusBadRequest, he.Code)
@@ -171,13 +171,12 @@ func TestNewMessageWithJsonBody(t *testing.T) {
 
 	monkey.Patch(models.NewMessage, func(authorID, channelID, content string) *models.Message {
 		return &models.Message{
-			ID:       	"bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
-			AuthorID:  	"bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
-			ChannelID: 	"f63f7c42-c567-4b17-bd3a-93c1eb510ed9",
-			Content:   	"Hello, JSON!",
+			ID:        "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
+			AuthorID:  "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
+			ChannelID: "f63f7c42-c567-4b17-bd3a-93c1eb510ed9",
+			Content:   "Hello, JSON!",
 		}
 	})
-
 
 	monkey.Patch(models.DoesUserCanSendMessageInChannel, func(userID, channelID string) bool {
 		return true
@@ -210,20 +209,20 @@ func TestGetMessageHandlerReturnMessage(t *testing.T) {
 	monkey.Patch(models.DoesUserCanSendMessageInChannel, func(userID, channelID string) bool {
 		return true
 	})
-	
+
 	monkey.Patch(models.GetMessageByChannelIDAndMessageID, func(channelID string, messageID string) *models.Message {
 		return &models.Message{
-			ID:       	"bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
-			AuthorID:  	"bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
-			ChannelID: 	"f63f7c42-c567-4b17-bd3a-93c1eb510ed9",
-			Content:   	"feudbfuidsfhdosr",
+			ID:        "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
+			AuthorID:  "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
+			ChannelID: "f63f7c42-c567-4b17-bd3a-93c1eb510ed9",
+			Content:   "feudbfuidsfhdosr",
 		}
 	})
-	
+
 	h := &Handler{}
 	if assert.NoError(t, h.GetMessageHandler(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		
+
 		var resp map[string]any
 		if assert.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp)) {
 			assert.Equal(t, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70", resp["author_id"])
@@ -242,7 +241,7 @@ func TestGetMessageHandlerMessageNotFound(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetParamNames("channelID", "messageID")
 	c.SetParamValues("DD04A392-A4D6-45F5-86B5-E070E7588097", "BB6A2B8A-954A-4AC2-A7B9-4B5A100AFB70")
-	
+
 	monkey.Patch(models.GetMessageByChannelIDAndMessageID, func(channelID string, messageID string) *models.Message {
 		return nil
 	})
@@ -250,9 +249,9 @@ func TestGetMessageHandlerMessageNotFound(t *testing.T) {
 	monkey.Patch(models.DoesUserCanSendMessageInChannel, func(userID, channelID string) bool {
 		return true
 	})
-	
+
 	h := &Handler{}
-	
+
 	err := h.GetMessageHandler(c)
 	if he, ok := err.(*echo.HTTPError); ok {
 		assert.Equal(t, http.StatusNotFound, he.Code)
@@ -385,10 +384,10 @@ func TestGetMessageHandlerUserNoPermission(t *testing.T) {
 
 	monkey.Patch(models.GetMessageByChannelIDAndMessageID, func(channelID string, messageID string) *models.Message {
 		return &models.Message{
-			ID:       	"bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
-			AuthorID:  	"bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
-			ChannelID: 	"f63f7c42-c567-4b17-bd3a-93c1eb510ed9",
-			Content:   	"feudbfuidsfhdosr",
+			ID:        "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
+			AuthorID:  "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70",
+			ChannelID: "f63f7c42-c567-4b17-bd3a-93c1eb510ed9",
+			Content:   "feudbfuidsfhdosr",
 		}
 	})
 

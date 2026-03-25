@@ -1,7 +1,7 @@
 package models
 
 import (
-	"MessagesService/databases"
+	"cpnv.ch/messagesservice/databases"
 	"time"
 )
 
@@ -84,7 +84,7 @@ func GetMessageByChannelIDAndMessageID(channelID string, messageID string) *Mess
 	if err := q.Scan(&id, &content, &authorID, &chID, &createdAt, &updatedAt, &deletedAt); err != nil {
 		return nil
 	}
-	
+
 	return &Message{
 		ID:        id,
 		Content:   content,
@@ -104,7 +104,7 @@ func GetMessagesByChannelID(channelID string, pageSize, pageNumber int) []*Messa
 		SELECT id, content, author_id, channel_id, created_at, updated_at, deleted_at
 		FROM messages
 		WHERE channel_id = ? LIMIT ?`,
-		channelID, pageSize * pageNumber,
+		channelID, pageSize*pageNumber,
 	)
 
 	iter := q.Iter()
@@ -131,7 +131,7 @@ func GetMessagesByChannelID(channelID string, pageSize, pageNumber int) []*Messa
 		messages = append(messages, message)
 	}
 
-	iter.Close();
+	iter.Close()
 
 	return messages
 }

@@ -1,8 +1,8 @@
 package middlewares
 
 import (
-	"MessagesService/utils"
 	"context"
+	"cpnv.ch/messagesservice/utils"
 	"net/http"
 )
 

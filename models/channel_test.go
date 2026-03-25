@@ -1,28 +1,32 @@
 package models
 
 import (
+	"bytes"
 	"io"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
-	"github.com/bouk/monkey"
 	"github.com/stretchr/testify/assert"
 )
 
-
 func TestGetUserChannels(t *testing.T) {
 	fakeUserID := "F77AC4EA-4AF0-4F64-A985-CAA0284C8257"
+	oldGetHTTP := getHTTP
+	oldReadHTTPBody := readHTTPBody
+	t.Cleanup(func() {
+		getHTTP = oldGetHTTP
+		readHTTPBody = oldReadHTTPBody
+	})
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fakeResponseBody := `["27731CCA-ADB5-42DB-AA8C-500994FC4098","3F2504E0-4F89-11D3-9A0C-0305E82C3301"]`
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(fakeResponseBody))
-	}))
-	defer server.Close()
+	getHTTP = func(url string) (*http.Response, error) {
+		assert.Equal(t, "http://localhost:8080/api/v1/users/"+fakeUserID+"/channels?field=id", url)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(bytes.NewBufferString(`["27731CCA-ADB5-42DB-AA8C-500994FC4098","3F2504E0-4F89-11D3-9A0C-0305E82C3301"]`)),
+		}, nil
+	}
 
-	t.Setenv("BASE_API_URL", server.URL+"/api/v1")
+	t.Setenv("BASE_API_URL", "http://localhost:8080/api/v1")
 
 	usersChannels := GetUserChannels(fakeUserID)
 
@@ -36,13 +40,14 @@ func TestGetUserChannels(t *testing.T) {
 
 func TestGetUserChannelsWithError(t *testing.T) {
 	fakeUserID := "F77AC4EA-4AF0-4F64-A985-CAA0284C8257"
-
-	monkey.Patch(http.Get, func(url string) (*http.Response, error) {
-		return nil, assert.AnError
+	oldGetHTTP := getHTTP
+	t.Cleanup(func() {
+		getHTTP = oldGetHTTP
 	})
 
-	defer monkey.Unpatch(http.Get)
-
+	getHTTP = func(url string) (*http.Response, error) {
+		return nil, assert.AnError
+	}
 
 	t.Setenv("BASE_API_URL", "http://localhost:8080/api/v1")
 
@@ -52,17 +57,24 @@ func TestGetUserChannelsWithError(t *testing.T) {
 
 func TestGetUserChannelsWithIOBodyError(t *testing.T) {
 	fakeUserID := "F77AC4EA-4AF0-4F64-A985-CAA0284C8257"
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	monkey.Patch(io.ReadAll, func(r io.Reader) ([]byte, error) {
-		return nil, assert.AnError
+	oldGetHTTP := getHTTP
+	oldReadHTTPBody := readHTTPBody
+	t.Cleanup(func() {
+		getHTTP = oldGetHTTP
+		readHTTPBody = oldReadHTTPBody
 	})
 
-	t.Setenv("BASE_API_URL", server.URL+"/api/v1")
+	getHTTP = func(url string) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(bytes.NewBufferString("ignored")),
+		}, nil
+	}
+	readHTTPBody = func(r io.Reader) ([]byte, error) {
+		return nil, assert.AnError
+	}
+
+	t.Setenv("BASE_API_URL", "http://localhost:8080/api/v1")
 
 	usersChannels := GetUserChannels(fakeUserID)
 	assert.Empty(t, usersChannels)
@@ -71,13 +83,20 @@ func TestGetUserChannelsWithIOBodyError(t *testing.T) {
 func TestDoesUserCanSendMessageInChannel(t *testing.T) {
 	fakeUserID := "F77AC4EA-4AF0-4F64-A985-CAA0284C8257"
 	fakeChannelID := "27731CCA-ADB5-42DB-AA8C-500994FC4098"
+	oldGetHTTP := getHTTP
+	t.Cleanup(func() {
+		getHTTP = oldGetHTTP
+	})
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
+	getHTTP = func(url string) (*http.Response, error) {
+		assert.Equal(t, "http://localhost:8080/api/v1/channels/"+fakeChannelID+"/users/"+fakeUserID, url)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(bytes.NewBuffer(nil)),
+		}, nil
+	}
 
-	t.Setenv("BASE_API_URL", server.URL+"/api/v1")
+	t.Setenv("BASE_API_URL", "http://localhost:8080/api/v1")
 
 	canSend := DoesUserCanSendMessageInChannel(fakeUserID, fakeChannelID)
 
@@ -87,11 +106,14 @@ func TestDoesUserCanSendMessageInChannel(t *testing.T) {
 func TestDoesUserCanSendMessageInChannelWithError(t *testing.T) {
 	fakeUserID := "F77AC4EA-4AF0-4F64-A985-CAA0284C8257"
 	fakeChannelID := "27731CCA-ADB5-42DB-AA8C-500994FC4098"
-
-	monkey.Patch(http.Get, func(url string) (*http.Response, error) {
-		return nil, assert.AnError
+	oldGetHTTP := getHTTP
+	t.Cleanup(func() {
+		getHTTP = oldGetHTTP
 	})
-	defer monkey.Unpatch(http.Get)
+
+	getHTTP = func(url string) (*http.Response, error) {
+		return nil, assert.AnError
+	}
 	t.Setenv("BASE_API_URL", "http://localhost:8080/api/v1")
 
 	canSend := DoesUserCanSendMessageInChannel(fakeUserID, fakeChannelID)
@@ -101,12 +123,18 @@ func TestDoesUserCanSendMessageInChannelWithError(t *testing.T) {
 func TestDoesUserCanSendMessageInChannelWithNonOKStatus(t *testing.T) {
 	fakeUserID := "F77AC4EA-4AF0-4F64-A985-CAA0284C8257"
 	fakeChannelID := "27731CCA-ADB5-42DB-AA8C-500994FC4098"
+	oldGetHTTP := getHTTP
+	t.Cleanup(func() {
+		getHTTP = oldGetHTTP
+	})
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusForbidden)
-	}))
-	defer server.Close()
-	t.Setenv("BASE_API_URL", server.URL+"/api/v1")
+	getHTTP = func(url string) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusForbidden,
+			Body:       io.NopCloser(bytes.NewBuffer(nil)),
+		}, nil
+	}
+	t.Setenv("BASE_API_URL", "http://localhost:8080/api/v1")
 
 	canSend := DoesUserCanSendMessageInChannel(fakeUserID, fakeChannelID)
 	assert.False(t, canSend)
@@ -115,13 +143,19 @@ func TestDoesUserCanSendMessageInChannelWithNonOKStatus(t *testing.T) {
 func TestDoesUserCanReadMessagesInChannel(t *testing.T) {
 	fakeUserID := "F77AC4EA-4AF0-4F64-A985-CAA0284C8257"
 	fakeChannelID := "27731CCA-ADB5-42DB-AA8C-500994FC4098"
+	oldGetHTTP := getHTTP
+	t.Cleanup(func() {
+		getHTTP = oldGetHTTP
+	})
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
+	getHTTP = func(url string) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(bytes.NewBuffer(nil)),
+		}, nil
+	}
 
-	t.Setenv("BASE_API_URL", server.URL+"/api/v1")
+	t.Setenv("BASE_API_URL", "http://localhost:8080/api/v1")
 
 	canRead := DoesUserCanReadMessagesInChannel(fakeUserID, fakeChannelID)
 

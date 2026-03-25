@@ -27,20 +27,20 @@ func Migrate() error {
 	}
 	for name, cmds := range migrations {
 		var cnt int
-		if err := Session.Query(`SELECT COUNT(*) FROM migrations WHERE name = ?`, name).Scan(&cnt); err != nil {
+		if err := sessionQuery(Session, `SELECT COUNT(*) FROM migrations WHERE name = ?`, name).Scan(&cnt); err != nil {
 			return err
 		}
 		if cnt > 0 {
 			continue
 		}
 
-		if err := Session.Query(cmds["up"]).Exec(); err != nil {
+		if err := execQuery(sessionQuery(Session, cmds["up"])); err != nil {
 			return err
 		}
-		if err := Session.Query(`
+		if err := execQuery(sessionQuery(Session, `
 			INSERT INTO migrations (name, applied_at)
 			VALUES (?, toTimestamp(now()))
-		`, name).Exec(); err != nil {
+		`, name)); err != nil {
 			return err
 		}
 	}
@@ -48,10 +48,10 @@ func Migrate() error {
 }
 
 func createMigrationsTable() error {
-	return Session.Query(`
+	return execQuery(sessionQuery(Session, `
 		CREATE TABLE IF NOT EXISTS migrations (
 			name text PRIMARY KEY,
 			applied_at timestamp
 		);
-	`).Exec()
+	`))
 }
