@@ -1,0 +1,57 @@
+package databases
+
+var migrations = map[string]map[string]string{
+	"2025-11-17-11-54-24_create_messages_table": {
+		"up": `
+			CREATE TABLE IF NOT EXISTS messages (
+				id uuid,
+				content text,
+				author_id uuid,
+				channel_id uuid,
+				created_at timestamp,
+				updated_at timestamp,
+				deleted_at timestamp,
+				PRIMARY KEY (channel_id, id)
+			) WITH CLUSTERING ORDER BY (id DESC);
+		`,
+		"down": `
+			DROP TABLE IF EXISTS messages;
+		`,
+	},
+}
+
+// Migrate applies the database migrations
+func Migrate() error {
+	if err := createMigrationsTable(); err != nil {
+		return err
+	}
+	for name, cmds := range migrations {
+		var cnt int
+		if err := sessionQuery(Session, `SELECT COUNT(*) FROM migrations WHERE name = ?`, name).Scan(&cnt); err != nil {
+			return err
+		}
+		if cnt > 0 {
+			continue
+		}
+
+		if err := execQuery(sessionQuery(Session, cmds["up"])); err != nil {
+			return err
+		}
+		if err := execQuery(sessionQuery(Session, `
+			INSERT INTO migrations (name, applied_at)
+			VALUES (?, toTimestamp(now()))
+		`, name)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func createMigrationsTable() error {
+	return execQuery(sessionQuery(Session, `
+		CREATE TABLE IF NOT EXISTS migrations (
+			name text PRIMARY KEY,
+			applied_at timestamp
+		);
+	`))
+}
