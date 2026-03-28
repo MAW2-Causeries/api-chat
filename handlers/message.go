@@ -1,9 +1,10 @@
 package handlers
 
 import (
+	"strconv"
+
 	"cpnv.ch/messagesservice/middlewares"
 	"cpnv.ch/messagesservice/models"
-	"strconv"
 
 	"github.com/labstack/echo/v4"
 )
@@ -81,9 +82,6 @@ func (h *Handler) GetMessagesHandler(c echo.Context) (err error) {
 	}
 
 	messages := models.GetMessagesByChannelID(channelID, limitInt, pageInt)
-	if messages == nil {
-		return echo.NewHTTPError(500, "Failed to retrieve messages")
-	}
 
 	messageMaps := make([]map[string]any, len(messages))
 	for i, message := range messages {
