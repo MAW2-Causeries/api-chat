@@ -13,8 +13,8 @@ func TestVerifyBearerToken(t *testing.T) {
 	t.Setenv("JWT_SECRET", "test-secret")
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": "user-123",
-		"exp":     time.Now().Add(time.Hour).Unix(),
+		"sub": "user-123",
+		"exp": time.Now().Add(time.Hour).Unix(),
 	})
 	signedToken, err := token.SignedString([]byte("test-secret"))
 	assert.NoError(t, err)

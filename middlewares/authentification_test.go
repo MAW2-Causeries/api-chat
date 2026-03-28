@@ -31,8 +31,8 @@ func TestAuthentificationInjectsUserIDIntoContext(t *testing.T) {
 	t.Setenv("JWT_SECRET", "middleware-secret")
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": "user-456",
-		"exp":     time.Now().Add(time.Hour).Unix(),
+		"sub": "user-456",
+		"exp": time.Now().Add(time.Hour).Unix(),
 	})
 	signedToken, err := token.SignedString([]byte("middleware-secret"))
 	assert.NoError(t, err)

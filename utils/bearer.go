@@ -26,6 +26,6 @@ func VerifyBearerToken(Authorization string) (string, error) {
 	if !ok {
 		return "", errors.New("invalid token claims")
 	}
-	userID, _ := claims["user_id"].(string)
+	userID, _ := claims["sub"].(string)
 	return userID, nil
 }
