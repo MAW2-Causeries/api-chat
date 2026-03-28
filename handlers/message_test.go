@@ -401,7 +401,7 @@ func TestGetMessageHandlerUserNoPermission(t *testing.T) {
 		t.Fatalf("expected HTTPError, got %v", err)
 	}
 }
-func TestGetMessagesHandlerFailedToRetrieveMessages(t *testing.T) {
+func TestGetMessagesHandlerNilMessagesReturnsEmptyList(t *testing.T) {
 	e := echo.New()
 	requestContext := context.WithValue(context.Background(), middlewares.UserIDKey, "bb6a2b8a-954a-4ac2-a7b9-4b5a100afb70")
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/channels/DD04A392-A4D6-45F5-86B5-E070E7588097/messages", nil)
@@ -421,12 +421,13 @@ func TestGetMessagesHandlerFailedToRetrieveMessages(t *testing.T) {
 
 	h := &Handler{}
 
-	err := h.GetMessagesHandler(c)
-	if he, ok := err.(*echo.HTTPError); ok {
-		assert.Equal(t, http.StatusInternalServerError, he.Code)
-		assert.Equal(t, "Failed to retrieve messages", he.Message)
-	} else {
-		t.Fatalf("expected HTTPError, got %v", err)
+	if assert.NoError(t, h.GetMessagesHandler(c)) {
+		assert.Equal(t, http.StatusOK, rec.Code)
+
+		var resp []map[string]any
+		if assert.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp)) {
+			assert.Empty(t, resp)
+		}
 	}
 }
 func TestNewMessageHandlerMissingChannelID(t *testing.T) {
