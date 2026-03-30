@@ -24,21 +24,30 @@ func getHTTP(url string) (*http.Response, error) {
 
 // GetUserChannels retrieves the list of channel IDs that a user is a member of by making an HTTP GET request to the API. It returns a slice of channel IDs as strings.
 func GetUserChannels(userID string) []string {
-	var channelIDs []string
+	var channels []struct {
+		ID string `json:"id"`
+	}
 
 	baseURL := utils.GetEnv("BASE_API_URL", "http://localhost:8080/api/v1")
 	resp, err := getHTTP(baseURL + "/users/" + userID + "/channels?field=id")
 	if err != nil {
-		return channelIDs
+		return []string{}
 	}
 	defer resp.Body.Close()
 
 	body, err := readHTTPBody(resp.Body)
 	if err != nil {
-		return channelIDs
+		return []string{}
 	}
 
-	json.Unmarshal(body, &channelIDs)
+	if err := json.Unmarshal(body, &channels); err != nil {
+		return []string{}
+	}
+
+	channelIDs := make([]string, len(channels))
+	for i, ch := range channels {
+		channelIDs[i] = ch.ID
+	}
 	return channelIDs
 }
 

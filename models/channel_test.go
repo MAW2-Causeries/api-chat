@@ -24,7 +24,7 @@ func TestGetUserChannels(t *testing.T) {
 		assert.Equal(t, "super-secret-token", req.Header.Get("X-Master-Secret-Token"))
 		return &http.Response{
 			StatusCode: http.StatusOK,
-			Body:       io.NopCloser(bytes.NewBufferString(`["27731CCA-ADB5-42DB-AA8C-500994FC4098","3F2504E0-4F89-11D3-9A0C-0305E82C3301"]`)),
+			Body:       io.NopCloser(bytes.NewBufferString(`[{"id":"27731CCA-ADB5-42DB-AA8C-500994FC4098"},{"id":"3F2504E0-4F89-11D3-9A0C-0305E82C3301"}]`)),
 		}, nil
 	}
 
