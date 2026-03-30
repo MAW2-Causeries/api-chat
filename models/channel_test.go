@@ -11,15 +11,17 @@ import (
 
 func TestGetUserChannels(t *testing.T) {
 	fakeUserID := "F77AC4EA-4AF0-4F64-A985-CAA0284C8257"
-	oldGetHTTP := getHTTP
+	oldDoHTTPRequest := doHTTPRequest
 	oldReadHTTPBody := readHTTPBody
 	t.Cleanup(func() {
-		getHTTP = oldGetHTTP
+		doHTTPRequest = oldDoHTTPRequest
 		readHTTPBody = oldReadHTTPBody
 	})
 
-	getHTTP = func(url string) (*http.Response, error) {
-		assert.Equal(t, "http://localhost:8080/api/v1/users/"+fakeUserID+"/channels?field=id", url)
+	doHTTPRequest = func(req *http.Request) (*http.Response, error) {
+		assert.Equal(t, http.MethodGet, req.Method)
+		assert.Equal(t, "http://localhost:8080/api/v1/users/"+fakeUserID+"/channels?field=id", req.URL.String())
+		assert.Equal(t, "super-secret-token", req.Header.Get("X-Master-Secret-Token"))
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(bytes.NewBufferString(`["27731CCA-ADB5-42DB-AA8C-500994FC4098","3F2504E0-4F89-11D3-9A0C-0305E82C3301"]`)),
@@ -27,6 +29,7 @@ func TestGetUserChannels(t *testing.T) {
 	}
 
 	t.Setenv("BASE_API_URL", "http://localhost:8080/api/v1")
+	t.Setenv("MASTER_SECRET_TOKEN", "super-secret-token")
 
 	usersChannels := GetUserChannels(fakeUserID)
 
@@ -40,12 +43,12 @@ func TestGetUserChannels(t *testing.T) {
 
 func TestGetUserChannelsWithError(t *testing.T) {
 	fakeUserID := "F77AC4EA-4AF0-4F64-A985-CAA0284C8257"
-	oldGetHTTP := getHTTP
+	oldDoHTTPRequest := doHTTPRequest
 	t.Cleanup(func() {
-		getHTTP = oldGetHTTP
+		doHTTPRequest = oldDoHTTPRequest
 	})
 
-	getHTTP = func(url string) (*http.Response, error) {
+	doHTTPRequest = func(req *http.Request) (*http.Response, error) {
 		return nil, assert.AnError
 	}
 
@@ -57,14 +60,14 @@ func TestGetUserChannelsWithError(t *testing.T) {
 
 func TestGetUserChannelsWithIOBodyError(t *testing.T) {
 	fakeUserID := "F77AC4EA-4AF0-4F64-A985-CAA0284C8257"
-	oldGetHTTP := getHTTP
+	oldDoHTTPRequest := doHTTPRequest
 	oldReadHTTPBody := readHTTPBody
 	t.Cleanup(func() {
-		getHTTP = oldGetHTTP
+		doHTTPRequest = oldDoHTTPRequest
 		readHTTPBody = oldReadHTTPBody
 	})
 
-	getHTTP = func(url string) (*http.Response, error) {
+	doHTTPRequest = func(req *http.Request) (*http.Response, error) {
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(bytes.NewBufferString("ignored")),
@@ -83,13 +86,15 @@ func TestGetUserChannelsWithIOBodyError(t *testing.T) {
 func TestDoesUserCanSendMessageInChannel(t *testing.T) {
 	fakeUserID := "F77AC4EA-4AF0-4F64-A985-CAA0284C8257"
 	fakeChannelID := "27731CCA-ADB5-42DB-AA8C-500994FC4098"
-	oldGetHTTP := getHTTP
+	oldDoHTTPRequest := doHTTPRequest
 	t.Cleanup(func() {
-		getHTTP = oldGetHTTP
+		doHTTPRequest = oldDoHTTPRequest
 	})
 
-	getHTTP = func(url string) (*http.Response, error) {
-		assert.Equal(t, "http://localhost:8080/api/v1/channels/"+fakeChannelID+"/users/"+fakeUserID, url)
+	doHTTPRequest = func(req *http.Request) (*http.Response, error) {
+		assert.Equal(t, http.MethodGet, req.Method)
+		assert.Equal(t, "http://localhost:8080/api/v1/channels/"+fakeChannelID+"/users/"+fakeUserID, req.URL.String())
+		assert.Equal(t, "super-secret-token", req.Header.Get("X-Master-Secret-Token"))
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(bytes.NewBuffer(nil)),
@@ -97,6 +102,7 @@ func TestDoesUserCanSendMessageInChannel(t *testing.T) {
 	}
 
 	t.Setenv("BASE_API_URL", "http://localhost:8080/api/v1")
+	t.Setenv("MASTER_SECRET_TOKEN", "super-secret-token")
 
 	canSend := DoesUserCanSendMessageInChannel(fakeUserID, fakeChannelID)
 
@@ -106,12 +112,12 @@ func TestDoesUserCanSendMessageInChannel(t *testing.T) {
 func TestDoesUserCanSendMessageInChannelWithError(t *testing.T) {
 	fakeUserID := "F77AC4EA-4AF0-4F64-A985-CAA0284C8257"
 	fakeChannelID := "27731CCA-ADB5-42DB-AA8C-500994FC4098"
-	oldGetHTTP := getHTTP
+	oldDoHTTPRequest := doHTTPRequest
 	t.Cleanup(func() {
-		getHTTP = oldGetHTTP
+		doHTTPRequest = oldDoHTTPRequest
 	})
 
-	getHTTP = func(url string) (*http.Response, error) {
+	doHTTPRequest = func(req *http.Request) (*http.Response, error) {
 		return nil, assert.AnError
 	}
 	t.Setenv("BASE_API_URL", "http://localhost:8080/api/v1")
@@ -123,12 +129,12 @@ func TestDoesUserCanSendMessageInChannelWithError(t *testing.T) {
 func TestDoesUserCanSendMessageInChannelWithNonOKStatus(t *testing.T) {
 	fakeUserID := "F77AC4EA-4AF0-4F64-A985-CAA0284C8257"
 	fakeChannelID := "27731CCA-ADB5-42DB-AA8C-500994FC4098"
-	oldGetHTTP := getHTTP
+	oldDoHTTPRequest := doHTTPRequest
 	t.Cleanup(func() {
-		getHTTP = oldGetHTTP
+		doHTTPRequest = oldDoHTTPRequest
 	})
 
-	getHTTP = func(url string) (*http.Response, error) {
+	doHTTPRequest = func(req *http.Request) (*http.Response, error) {
 		return &http.Response{
 			StatusCode: http.StatusForbidden,
 			Body:       io.NopCloser(bytes.NewBuffer(nil)),
@@ -143,12 +149,12 @@ func TestDoesUserCanSendMessageInChannelWithNonOKStatus(t *testing.T) {
 func TestDoesUserCanReadMessagesInChannel(t *testing.T) {
 	fakeUserID := "F77AC4EA-4AF0-4F64-A985-CAA0284C8257"
 	fakeChannelID := "27731CCA-ADB5-42DB-AA8C-500994FC4098"
-	oldGetHTTP := getHTTP
+	oldDoHTTPRequest := doHTTPRequest
 	t.Cleanup(func() {
-		getHTTP = oldGetHTTP
+		doHTTPRequest = oldDoHTTPRequest
 	})
 
-	getHTTP = func(url string) (*http.Response, error) {
+	doHTTPRequest = func(req *http.Request) (*http.Response, error) {
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(bytes.NewBuffer(nil)),

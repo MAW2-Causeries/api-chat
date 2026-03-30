@@ -2,13 +2,25 @@ package models
 
 import (
 	"encoding/json"
-	"cpnv.ch/messagesservice/utils"
 	"io"
 	"net/http"
+
+	"cpnv.ch/messagesservice/utils"
 )
 
-var getHTTP = http.Get
+var doHTTPRequest = http.DefaultClient.Do
 var readHTTPBody = io.ReadAll
+
+func getHTTP(url string) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("X-Master-Secret-Token", utils.GetEnv("MASTER_SECRET_TOKEN", ""))
+
+	return doHTTPRequest(req)
+}
 
 // GetUserChannels retrieves the list of channel IDs that a user is a member of by making an HTTP GET request to the API. It returns a slice of channel IDs as strings.
 func GetUserChannels(userID string) []string {

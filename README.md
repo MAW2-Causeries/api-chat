@@ -71,6 +71,7 @@ services:
       SCYLLA_PASSWORD: ""
       SCYLLA_USER: ""
       BASE_API_URL: http://localhost # Used to contact the base api that manage channels
+      MASTER_SECRET_TOKEN: your_master_secret_token_here # Sent as X-Master-Secret-Token on channel GET requests
       JWT_SECRET: your_jwt_secret_here # Replace with a secure secret in production 
     depends_on:
       - scylla
