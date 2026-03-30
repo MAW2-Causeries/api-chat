@@ -81,23 +81,16 @@ func TestWebsocketReturnsUpgradeError(t *testing.T) {
 
 func TestWebsocketSubscribesAndUnsubscribesUser(t *testing.T) {
 	connectedUser = make(map[string]*websocket.Conn)
-	channelsSubscribtion = make(map[string][]string)
-	oldGetUserChannels := getUserChannels
 	oldUpgradeConnection := upgradeConnection
 	oldCloseConnection := closeConnection
 	oldReadConnectionMessage := readConnectionMessage
 	t.Cleanup(func() {
-		getUserChannels = oldGetUserChannels
 		upgradeConnection = oldUpgradeConnection
 		closeConnection = oldCloseConnection
 		readConnectionMessage = oldReadConnectionMessage
 	})
 
 	readCalls := 0
-	getUserChannels = func(userID string) []string {
-		assert.Equal(t, "user-1", userID)
-		return []string{"channel-a", "channel-b"}
-	}
 	upgradeConnection = func(c echo.Context) (*websocket.Conn, error) {
 		return &websocket.Conn{}, nil
 	}
@@ -108,8 +101,6 @@ func TestWebsocketSubscribesAndUnsubscribesUser(t *testing.T) {
 		readCalls++
 		if readCalls == 1 {
 			assert.NotNil(t, connectedUser["user-1"])
-			assert.Equal(t, []string{"user-1"}, channelsSubscribtion["channel-a"])
-			assert.Equal(t, []string{"user-1"}, channelsSubscribtion["channel-b"])
 		}
 		return 0, nil, errors.New("closed")
 	}
@@ -123,31 +114,36 @@ func TestWebsocketSubscribesAndUnsubscribesUser(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Nil(t, connectedUser["user-1"])
-	assert.Empty(t, channelsSubscribtion["channel-a"])
-	assert.Empty(t, channelsSubscribtion["channel-b"])
+	assert.Len(t, connectedUser, 0)
 }
 
-func TestNotifySkipsNilConnectionsAndContinuesOnWriteError(t *testing.T) {
-	defer monkey.UnpatchAll()
-
+func TestNotifyUsesChannelUsersAndSkipsDisconnectedUsers(t *testing.T) {
 	connectedUser = map[string]*websocket.Conn{
 		"nil-user": nil,
 		"ok-user":  {},
 		"bad-user": {},
 	}
-	channelsSubscribtion = map[string][]string{
-		"channel-1": {"nil-user", "ok-user", "bad-user"},
+	oldGetChannelUsers := getChannelUsers
+	oldWriteConnectionJSON := writeConnectionJSON
+	t.Cleanup(func() {
+		getChannelUsers = oldGetChannelUsers
+		writeConnectionJSON = oldWriteConnectionJSON
+	})
+
+	getChannelUsers = func(channelID string) []string {
+		assert.Equal(t, "channel-1", channelID)
+		return []string{"nil-user", "ok-user", "bad-user"}
 	}
 
 	var writes int
-	monkey.Patch((*websocket.Conn).WriteJSON, func(conn *websocket.Conn, v interface{}) error {
+	writeConnectionJSON = func(conn *websocket.Conn, v any) error {
 		writes++
 		if conn == connectedUser["bad-user"] {
 			return assert.AnError
 		}
 		assert.Equal(t, "hello", v.(map[string]any)["content"])
 		return nil
-	})
+	}
 
 	(&Handler{}).notify("channel-1", &models.Message{Content: "hello"})
 

@@ -22,14 +22,14 @@ func getHTTP(url string) (*http.Response, error) {
 	return doHTTPRequest(req)
 }
 
-// GetUserChannels retrieves the list of channel IDs that a user is a member of by making an HTTP GET request to the API. It returns a slice of channel IDs as strings.
-func GetUserChannels(userID string) []string {
-	var channels []struct {
+// GetChannelUsers retrieves the list of user IDs that are members of a specific channel by making an HTTP GET request to the API. It returns a slice of user IDs, or an empty slice if there was an error during the request or response parsing.
+func GetChannelUsers(channelID string) []string {
+	var users []struct {
 		ID string `json:"id"`
 	}
 
 	baseURL := utils.GetEnv("BASE_API_URL", "http://localhost:8080/api/v1")
-	resp, err := getHTTP(baseURL + "/users/" + userID + "/channels?field=id")
+	resp, err := getHTTP(baseURL + "/channels/" + channelID + "/users")
 	if err != nil {
 		return []string{}
 	}
@@ -40,15 +40,15 @@ func GetUserChannels(userID string) []string {
 		return []string{}
 	}
 
-	if err := json.Unmarshal(body, &channels); err != nil {
+	if err := json.Unmarshal(body, &users); err != nil {
 		return []string{}
 	}
 
-	channelIDs := make([]string, len(channels))
-	for i, ch := range channels {
-		channelIDs[i] = ch.ID
+	userIDs := make([]string, len(users))
+	for i, u := range users {
+		userIDs[i] = u.ID
 	}
-	return channelIDs
+	return userIDs
 }
 
 // DoesUserCanSendMessageInChannel checks if a user has permission to send messages in a specific channel by making an HTTP GET request to the API. It returns true if the user can send messages, and false otherwise.

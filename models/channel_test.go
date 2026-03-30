@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetUserChannels(t *testing.T) {
-	fakeUserID := "F77AC4EA-4AF0-4F64-A985-CAA0284C8257"
+func TestGetChannelUsers(t *testing.T) {
+	fakeChannelID := "27731CCA-ADB5-42DB-AA8C-500994FC4098"
 	oldDoHTTPRequest := doHTTPRequest
 	oldReadHTTPBody := readHTTPBody
 	t.Cleanup(func() {
@@ -20,29 +20,29 @@ func TestGetUserChannels(t *testing.T) {
 
 	doHTTPRequest = func(req *http.Request) (*http.Response, error) {
 		assert.Equal(t, http.MethodGet, req.Method)
-		assert.Equal(t, "http://localhost:8080/api/v1/users/"+fakeUserID+"/channels?field=id", req.URL.String())
+		assert.Equal(t, "http://localhost:8080/api/v1/channels/"+fakeChannelID+"/users", req.URL.String())
 		assert.Equal(t, "super-secret-token", req.Header.Get("X-Master-Secret-Token"))
 		return &http.Response{
 			StatusCode: http.StatusOK,
-			Body:       io.NopCloser(bytes.NewBufferString(`[{"id":"27731CCA-ADB5-42DB-AA8C-500994FC4098"},{"id":"3F2504E0-4F89-11D3-9A0C-0305E82C3301"}]`)),
+			Body:       io.NopCloser(bytes.NewBufferString(`[{"id":"F77AC4EA-4AF0-4F64-A985-CAA0284C8257"},{"id":"3F2504E0-4F89-11D3-9A0C-0305E82C3301"}]`)),
 		}, nil
 	}
 
 	t.Setenv("BASE_API_URL", "http://localhost:8080/api/v1")
 	t.Setenv("MASTER_SECRET_TOKEN", "super-secret-token")
 
-	usersChannels := GetUserChannels(fakeUserID)
+	channelUsers := GetChannelUsers(fakeChannelID)
 
-	expectedChannels := []string{
-		"27731CCA-ADB5-42DB-AA8C-500994FC4098",
+	expectedUsers := []string{
+		"F77AC4EA-4AF0-4F64-A985-CAA0284C8257",
 		"3F2504E0-4F89-11D3-9A0C-0305E82C3301",
 	}
 
-	assert.Equal(t, expectedChannels, usersChannels)
+	assert.Equal(t, expectedUsers, channelUsers)
 }
 
-func TestGetUserChannelsWithError(t *testing.T) {
-	fakeUserID := "F77AC4EA-4AF0-4F64-A985-CAA0284C8257"
+func TestGetChannelUsersWithError(t *testing.T) {
+	fakeChannelID := "27731CCA-ADB5-42DB-AA8C-500994FC4098"
 	oldDoHTTPRequest := doHTTPRequest
 	t.Cleanup(func() {
 		doHTTPRequest = oldDoHTTPRequest
@@ -54,12 +54,12 @@ func TestGetUserChannelsWithError(t *testing.T) {
 
 	t.Setenv("BASE_API_URL", "http://localhost:8080/api/v1")
 
-	usersChannels := GetUserChannels(fakeUserID)
-	assert.Empty(t, usersChannels)
+	channelUsers := GetChannelUsers(fakeChannelID)
+	assert.Empty(t, channelUsers)
 }
 
-func TestGetUserChannelsWithIOBodyError(t *testing.T) {
-	fakeUserID := "F77AC4EA-4AF0-4F64-A985-CAA0284C8257"
+func TestGetChannelUsersWithIOBodyError(t *testing.T) {
+	fakeChannelID := "27731CCA-ADB5-42DB-AA8C-500994FC4098"
 	oldDoHTTPRequest := doHTTPRequest
 	oldReadHTTPBody := readHTTPBody
 	t.Cleanup(func() {
@@ -79,8 +79,8 @@ func TestGetUserChannelsWithIOBodyError(t *testing.T) {
 
 	t.Setenv("BASE_API_URL", "http://localhost:8080/api/v1")
 
-	usersChannels := GetUserChannels(fakeUserID)
-	assert.Empty(t, usersChannels)
+	channelUsers := GetChannelUsers(fakeChannelID)
+	assert.Empty(t, channelUsers)
 }
 
 func TestDoesUserCanSendMessageInChannel(t *testing.T) {

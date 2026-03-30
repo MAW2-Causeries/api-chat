@@ -14,8 +14,7 @@ var upgrader = websocket.Upgrader{
 }
 
 var connectedUser = make(map[string]*websocket.Conn)
-var channelsSubscribtion = make(map[string][]string)
-var getUserChannels = models.GetUserChannels
+var getChannelUsers = models.GetChannelUsers
 var upgradeConnection = func(c echo.Context) (*websocket.Conn, error) {
 	return upgrader.Upgrade(c.Response(), c.Request(), nil)
 }
@@ -41,10 +40,6 @@ func (h *Handler) Websocket(c echo.Context) (err error) {
 
 	connectedUser[userID] = ws
 
-	for _, channelID := range getUserChannels(userID) {
-		channelsSubscribtion[channelID] = append(channelsSubscribtion[channelID], userID)
-	}
-
 	for {
 		_, _, err := readConnectionMessage(ws)
 		if err != nil {
@@ -52,21 +47,12 @@ func (h *Handler) Websocket(c echo.Context) (err error) {
 		}
 	}
 
-	connectedUser[userID] = nil
-	for _, channelID := range getUserChannels(userID) {
-		subscribers := channelsSubscribtion[channelID]
-		for i, id := range subscribers {
-			if id == userID {
-				channelsSubscribtion[channelID] = append(subscribers[:i], subscribers[i+1:]...)
-				break
-			}
-		}
-	}
+	delete(connectedUser, userID)
 	return nil
 }
 
 func (h *Handler) notify(channelID string, message *models.Message) {
-	for _, userID := range channelsSubscribtion[channelID] {
+	for _, userID := range getChannelUsers(channelID) {
 		conn := connectedUser[userID]
 		if conn == nil {
 			continue
